@@ -165,7 +165,7 @@ class mboximport_module
 	private function parse_mime_message($decoded, $analysed)
 	{
 		// Get mode
-		$mode = 'post';
+		$mode = (isset($decoded['Headers']['in-reply-to:'])) ? 'reply' : 'post';
 
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
@@ -178,7 +178,7 @@ class mboximport_module
 		$data = array(
 			// General Posting Settings
 			'forum_id' => 4, // TODO Make it dynamic
-			'topic_id' => 0, // TODO Add topic_id when mode is 'reply'
+			'topic_id' => ($mode == 'reply') ? $this->get_topic_id_from_message_id($decoded['Headers']['in-reply-to:']) : 0,
 			'icon_id' => false,
 			// Defining Post Options
 			'enable_bbcode' => true,
@@ -211,6 +211,32 @@ class mboximport_module
 		);
 
 		return $post_data;
+	}
+
+	/**
+	 * Gets the topic_id of the post that has a message_id
+	 *
+	 * @param string $message_id
+	 * @return int
+	 */
+	private function get_topic_id_from_message_id($message_id)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		$sql = 'SELECT topic_id
+			  FROM ' . POSTS_TABLE . " 
+			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+
+		// Run the query
+		$result = $db->sql_query($sql);
+
+		$row = $db->sql_fetchrow($result);
+		$db->sql_freeresult($result);
+
+		return $row['topic_id'];
 	}
 
 	/**
