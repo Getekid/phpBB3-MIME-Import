@@ -36,6 +36,9 @@ class mboximport_module
 		/** @var \phpbb\template\template $template */
 		$template = $phpbb_container->get('template');
 
+		/** @var \phpbb\user $user */
+		$user = $phpbb_container->get('user');
+
 		// Load a template from adm/style for our ACP page
 		$this->tpl_name = 'mboximport_import';
 
@@ -125,7 +128,11 @@ class mboximport_module
 							// Submit the post
 							if ($this->message_not_imported($post_data['message_id']))
 							{
+								// We need to post as ANONYMOUS user
+								$user_id = $user->data['user_id'];
+								$user->session_kill();
 								submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
+								$user->session_create($user_id, true);
 								$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
 							}
 						}
