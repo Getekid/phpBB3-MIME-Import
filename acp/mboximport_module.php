@@ -123,8 +123,11 @@ class mboximport_module
 						{
 							$post_data = $this->parse_mime_message($decoded[$message], $results);
 							// Submit the post
-							submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
-							$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
+							if ($this->message_not_imported($post_data['message_id']))
+							{
+								submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
+								$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
+							}
 						}
 						else
 						{
@@ -208,6 +211,32 @@ class mboximport_module
 		);
 
 		return $post_data;
+	}
+
+	/**
+	 * Checks if the message hasn't been imported before
+	 *
+	 * @param string $message_id
+	 * @return bool
+	 */
+	private function message_not_imported($message_id)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		$sql = 'SELECT message_id
+			  FROM ' . POSTS_TABLE . " 
+			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+
+		// Run the query
+		$result = $db->sql_query($sql);
+
+		$row = $db->sql_fetchrow($result);
+		$db->sql_freeresult($result);
+
+		return !isset($row['message_id']);
 	}
 
 	/**
