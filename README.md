@@ -6,8 +6,10 @@ This is the repository for the development of the phpBB Mbox Import Extension.
 
 1. Download the latest release.
 2. Unzip the downloaded release and copy it to the `ext` directory of your phpBB board.
-3. Navigate in the ACP to `Customise -> Manage extensions`.
-4. Look for `Mbox Import` under the Disabled Extensions list, and click its `Enable` link.
+3. Download the [PHP MIME Email Message Parser](https://www.phpclasses.org/package/3169-PHP-Decode-MIME-e-mail-messages.html).
+4. Unzip the downloaded class and copy it to the `ext/getekid/mboximport/acp` directory.
+5. Navigate in the ACP to `Customise -> Manage extensions`.
+6. Look for `Mbox Import` under the Disabled Extensions list, and click its `Enable` link.
 
 ## Uninstall
 

@@ -16,9 +16,10 @@ if (empty($lang) || !is_array($lang))
 }
 
 $lang = array_merge($lang, array(
-	'ACP_MBOXIMPORT'				=> 'Mbox import',
-	'ACP_MBOXIMPORT_IMPORT'			=> 'Import',
-	'ACP_MBOXIMPORT_IMPORT_EXPLAIN'	=> 'Import an Mbox file',
-	'ACP_MBOXIMPORT_PATH'			=> 'File path',
-	'ACP_MBOXIMPORT_IMPORT_SUCCESS'	=> 'Mbox file has been imported successfully',
+	'ACP_MBOXIMPORT'								=> 'Mbox import',
+	'ACP_MBOXIMPORT_IMPORT'							=> 'Import',
+	'ACP_MBOXIMPORT_IMPORT_EXPLAIN'					=> 'Import an Mbox file',
+	'ACP_MBOXIMPORT_PATH'							=> 'File path',
+	'ACP_MBOXIMPORT_MIME_PARSER_CLASS_NOT_FOUND'	=> 'MIME Parser class not found',
+	'ACP_MBOXIMPORT_IMPORT_SUCCESS'					=> 'Mbox file has been imported successfully',
 ));
