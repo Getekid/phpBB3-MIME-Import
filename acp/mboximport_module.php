@@ -23,6 +23,9 @@ class mboximport_module
 		/** @var \phpbb\request\request $request */
 		$request = $phpbb_container->get('request');
 
+		/** @var \phpbb\template\template $template */
+		$template = $phpbb_container->get('template');
+
 		// Load a template from adm/style for our ACP page
 		$this->tpl_name = 'mboximport_import';
 
@@ -42,5 +45,8 @@ class mboximport_module
 			// TODO Add import function for Mbox file in the path
 			trigger_error($lang->lang('ACP_MBOXIMPORT_IMPORT_SUCCESS') . adm_back_link($this->u_action));
 		}
+		$template->assign_vars(array(
+			'U_ACTION'          	=> $this->u_action,
+		));
 	}
 }
