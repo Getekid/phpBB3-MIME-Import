@@ -123,7 +123,8 @@ class mboximport_module
 						{
 							$post_data = $this->parse_mime_message($decoded[$message], $results);
 							// Submit the post
-							$post_id = submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
+							submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
+							$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
 						}
 						else
 						{
@@ -195,17 +196,38 @@ class mboximport_module
 			'notify' => false,
 			'post_time' => (isset($analysed['Date'])) ? strtotime($analysed['Date']) : '',
 			'forum_name' => '',
-			'message_id' => (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
 		);
 
 		$post_data = array(
-			'mode'		=> $mode,
-			'subject'	=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
-			'username'	=> $username,
-			'poll'		=> $poll,
-			'data'		=> $data
+			'mode'			=> $mode,
+			'subject'		=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			'username'		=> $username,
+			'poll'			=> $poll,
+			'data'			=> $data,
+			'message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
 		);
 
 		return $post_data;
+	}
+
+	/**
+	 * Sets the message_id in a post
+	 *
+	 * @param int $post_id
+	 * @param string $message_id
+	 */
+	private function set_message_id_from_post_id($post_id, $message_id)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		$sql_arr = array(
+			'message_id'	=> $message_id,
+		);
+
+		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . 'WHERE ' . $db->sql_in_set('post_id', $post_id);
+		$db->sql_query($sql);
 	}
 }
