@@ -15,6 +15,7 @@ if (!defined('IN_PHPBB'))
 // Load the Mime Parser library
 @include_once('mimeparser/rfc822_addresses.php');
 @include_once('mimeparser/mime_parser.php');
+use mime_parser_class;
 
 class mboximport_module
 {
