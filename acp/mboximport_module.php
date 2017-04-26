@@ -121,7 +121,9 @@ class mboximport_module
 					{
 						if ($mime->Analyze($decoded[$message], $results))
 						{
-							// TODO Add import function for Mbox file in the path
+							$post_data = $this->parse_mime_message($decoded[$message], $results);
+							// Submit the post
+							$post_id = submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
 						}
 						else
 						{
@@ -147,5 +149,63 @@ class mboximport_module
 			'S_MIME_PARSER_CLASS'	=> class_exists('mime_parser_class'),
 			'U_ACTION'          	=> $this->u_action,
 		));
+	}
+
+	/**
+	 * Parses the Analysed message to phpBB post components
+	 *
+	 * @param array $decoded
+	 * @param array $analysed
+	 * @return array
+	 */
+	private function parse_mime_message($decoded, $analysed)
+	{
+		// Get mode
+		$mode = 'post';
+
+		// Get username
+		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
+		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
+
+		// Put together the data for the post
+		$message_phpbb = (isset($analysed['Data'])) ? $analysed['Data'] : ''; // TODO convert HTML code to BBcode
+		$poll = $uid = $bitfield = $flags = '';
+		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags);
+		$data = array(
+			// General Posting Settings
+			'forum_id' => 4, // TODO Make it dynamic
+			'topic_id' => 0, // TODO Add topic_id when mode is 'reply'
+			'icon_id' => false,
+			// Defining Post Options
+			'enable_bbcode' => true,
+			'enable_smilies' => false,
+			'enable_urls' => true,
+			'enable_sig' => true,
+			// Message Body
+			'message' => $message_phpbb,
+			'message_md5' => md5($message_phpbb),
+			// Values from generate_text_for_storage()
+			'bbcode_bitfield' => $bitfield,
+			'bbcode_uid' => $uid,
+			// Other Options
+			'post_edit_locked' => 0,
+			'topic_title' => (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			// Email Notification Settings
+			'notify_set' => false,
+			'notify' => false,
+			'post_time' => (isset($analysed['Date'])) ? strtotime($analysed['Date']) : '',
+			'forum_name' => '',
+			'message_id' => (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
+		);
+
+		$post_data = array(
+			'mode'		=> $mode,
+			'subject'	=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			'username'	=> $username,
+			'poll'		=> $poll,
+			'data'		=> $data
+		);
+
+		return $post_data;
 	}
 }
