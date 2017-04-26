@@ -123,7 +123,11 @@ class mboximport_module
 						{
 							$post_data = $this->parse_mime_message($decoded[$message], $results);
 							// Submit the post
-							$post_id = submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
+							if ($this->message_not_imported($post_data['message_id']))
+							{
+								submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
+								$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
+							}
 						}
 						else
 						{
@@ -161,7 +165,7 @@ class mboximport_module
 	private function parse_mime_message($decoded, $analysed)
 	{
 		// Get mode
-		$mode = 'post';
+		$mode = (isset($decoded['Headers']['in-reply-to:'])) ? 'reply' : 'post';
 
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
@@ -174,7 +178,7 @@ class mboximport_module
 		$data = array(
 			// General Posting Settings
 			'forum_id' => 4, // TODO Make it dynamic
-			'topic_id' => 0, // TODO Add topic_id when mode is 'reply'
+			'topic_id' => ($mode == 'reply') ? $this->get_topic_id_from_message_id($decoded['Headers']['in-reply-to:']) : 0,
 			'icon_id' => false,
 			// Defining Post Options
 			'enable_bbcode' => true,
@@ -195,17 +199,90 @@ class mboximport_module
 			'notify' => false,
 			'post_time' => (isset($analysed['Date'])) ? strtotime($analysed['Date']) : '',
 			'forum_name' => '',
-			'message_id' => (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
 		);
 
 		$post_data = array(
-			'mode'		=> $mode,
-			'subject'	=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
-			'username'	=> $username,
-			'poll'		=> $poll,
-			'data'		=> $data
+			'mode'			=> $mode,
+			'subject'		=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			'username'		=> $username,
+			'poll'			=> $poll,
+			'data'			=> $data,
+			'message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
 		);
 
 		return $post_data;
+	}
+
+	/**
+	 * Gets the topic_id of the post that has a message_id
+	 *
+	 * @param string $message_id
+	 * @return int
+	 */
+	private function get_topic_id_from_message_id($message_id)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		$sql = 'SELECT topic_id
+			  FROM ' . POSTS_TABLE . " 
+			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+
+		// Run the query
+		$result = $db->sql_query($sql);
+
+		$row = $db->sql_fetchrow($result);
+		$db->sql_freeresult($result);
+
+		return $row['topic_id'];
+	}
+
+	/**
+	 * Checks if the message hasn't been imported before
+	 *
+	 * @param string $message_id
+	 * @return bool
+	 */
+	private function message_not_imported($message_id)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		$sql = 'SELECT message_id
+			  FROM ' . POSTS_TABLE . " 
+			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+
+		// Run the query
+		$result = $db->sql_query($sql);
+
+		$row = $db->sql_fetchrow($result);
+		$db->sql_freeresult($result);
+
+		return !isset($row['message_id']);
+	}
+
+	/**
+	 * Sets the message_id in a post
+	 *
+	 * @param int $post_id
+	 * @param string $message_id
+	 */
+	private function set_message_id_from_post_id($post_id, $message_id)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		$sql_arr = array(
+			'message_id'	=> $message_id,
+		);
+
+		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . 'WHERE ' . $db->sql_in_set('post_id', $post_id);
+		$db->sql_query($sql);
 	}
 }
