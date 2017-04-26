@@ -1,0 +1,30 @@
+<!-- INCLUDE overall_header.html -->
+
+<h1>{L_ACP_MBOXIMPORT_IMPORT}</h1>
+
+<p>{L_ACP_MBOXIMPORT_IMPORT_EXPLAIN}</p>
+
+<!-- IF S_ERROR -->
+<div class="errorbox">
+	<h3>{L_WARNING}</h3>
+	<p>{ERROR_MSG}</p>
+</div>
+<!-- ENDIF -->
+
+<form id="MBOXIMPORT_IMPORT" method="post" action="{U_ACTION}">
+
+	<fieldset>
+		<legend>{L_ACP_MBOXIMPORT_IMPORT}</legend>
+		<dl>
+			<dt><label for="mboximport_path">{L_ACP_MBOXIMPORT_PATH}{L_COLON}</label></dt>
+			<dd><input type="text" id="mboximport_path" name="mboximport_path" /></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset class="submit-buttons">
+		<input class="button1" type="submit" id="submit" name="submit" value="{L_SUBMIT}" />
+		{S_FORM_TOKEN}
+	</fieldset>
+</form>
+
+<!-- INCLUDE overall_footer.html -->

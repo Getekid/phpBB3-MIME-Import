@@ -2,7 +2,7 @@
 	"name": "getekid/mboximport",
 	"type": "phpbb-extension",
 	"description": "An extension which allows you to import the emails from an Mbox file as posts in your phpBB forum",
-	"version": "0.1.0-dev",
+	"version": "0.2.0-dev",
 	"keywords": ["phpbb", "extension", "mbox"],
 	"license": "GPL-2.0",
 	"authors": [
