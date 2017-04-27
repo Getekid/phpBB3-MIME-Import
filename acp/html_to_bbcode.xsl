@@ -10,4 +10,5 @@
             <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
         </xsl:choose>
     </xsl:template>
+    <xsl:template match="img">[img]<xsl:value-of select="@src"/>[/img]</xsl:template>
 </xsl:stylesheet>
