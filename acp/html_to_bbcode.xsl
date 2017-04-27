@@ -4,5 +4,10 @@
     <xsl:template match="b|strong">[b]<xsl:apply-templates/>[/b]</xsl:template>
     <xsl:template match="i|em">[i]<xsl:apply-templates/>[/i]</xsl:template>
     <xsl:template match="u">[u]<xsl:apply-templates/>[/u]</xsl:template>
-    <xsl:template match="a">[url="<xsl:value-of select="@href"/>"]<xsl:apply-templates/>[/url]</xsl:template>
+    <xsl:template match="a">
+        <xsl:choose>
+            <xsl:when test="substring(@href, 1, 7)='http://' or substring(@href, 1, 8)='https://'">[url="<xsl:value-of select="@href"/>"]<xsl:apply-templates/>[/url]</xsl:when>
+            <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
 </xsl:stylesheet>
