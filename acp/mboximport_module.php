@@ -16,6 +16,8 @@ if (!defined('IN_PHPBB'))
 @include_once('mimeparser/rfc822_addresses.php');
 @include_once('mimeparser/mime_parser.php');
 use mime_parser_class;
+use \DOMDocument;
+use \XSLTProcessor;
 
 class mboximport_module
 {
@@ -179,10 +181,14 @@ class mboximport_module
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
 		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
 
+		// Convert HTML in Data to BBcode
+		$message = (isset($analysed['Data'])) ? $analysed['Data'] : '';
+		$message_phpbb = $this->html_to_bbcode($message);
+
 		// Put together the data for the post
-		$message_phpbb = (isset($analysed['Data'])) ? $analysed['Data'] : ''; // TODO convert HTML code to BBcode
+		//$message_phpbb = (isset($analysed['Data'])) ? $analysed['Data'] : ''; // TODO convert HTML code to BBcode
 		$poll = $uid = $bitfield = $flags = '';
-		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags);
+		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags, true, true);
 		$data = array(
 			// General Posting Settings
 			'forum_id' => 4, // TODO Make it dynamic
@@ -219,6 +225,33 @@ class mboximport_module
 		);
 
 		return $post_data;
+	}
+
+	/**
+	 * Converts HTML code to BBcode
+	 *
+	 * @param string $message
+	 * @return string
+	 */
+	private function html_to_bbcode($message)
+	{
+		// Remove break lines and create those defined by the html code
+		$message = preg_replace("/\r|\n/","", $message);
+		$message = preg_replace('/\<br\>/', "\n", $message);
+
+		$doc = new DOMDocument();
+		$doc->loadHTML('<?xml encoding="utf-8" ?>' . $message);
+		$doc->saveHTML();
+
+		$xsl = new DOMDocument;
+		$xsl->load(__DIR__ . '/' . 'html_to_bbcode.xsl');
+
+		$proc = new XSLTProcessor;
+		$proc->importStyleSheet($xsl);
+
+		$message_phpbb = $proc->transformToXML($doc);
+
+		return $message_phpbb;
 	}
 
 	/**
