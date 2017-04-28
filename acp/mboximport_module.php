@@ -172,8 +172,8 @@ class mboximport_module
 	private function parse_mime_message($decoded, $analysed)
 	{
 		// Get mode
-		$reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : 0;
-		$mode = ($reply_to == 0 || $this->message_not_imported($reply_to)) ? 'post' : 'reply';
+		$reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
+		$mode = ($reply_to == '' || $this->message_not_imported($reply_to)) ? 'post' : 'reply';
 
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
