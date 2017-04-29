@@ -17,5 +17,9 @@
         </xsl:choose>
     </xsl:template>
     <!-- Images -->
-    <xsl:template match="img">[img]<xsl:value-of select="@src"/>[/img]</xsl:template>
+    <xsl:template match="img">
+        <xsl:choose>
+            <xsl:when test="substring(@src, 1, 7)='http://' or substring(@src, 1, 8)='https://'">[img]<xsl:value-of select="@src"/>[/img]</xsl:when>
+        </xsl:choose>
+    </xsl:template>
 </xsl:stylesheet>
