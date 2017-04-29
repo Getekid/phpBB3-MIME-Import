@@ -318,9 +318,6 @@ class mboximport_module
 		/** @var \phpbb\db\driver\driver_interface $db */
 		$db = $phpbb_container->get('dbal.conn');
 
-		/** @var \phpbb\config\config $config */
-		$config = $phpbb_container->get('config');
-
 		/** @var \phpbb\language\language $lang */
 		$lang = $phpbb_container->get('language');
 
@@ -329,10 +326,6 @@ class mboximport_module
 
 		$error = array();
 
-		$num_attachments = sizeof($attachment_data);
-
-		$cfg = array();
-		$cfg['max_attachments'] = ($is_message) ? $config['max_attachments_pm'] : $config['max_attachments'];
 		$forum_id = ($is_message) ? 0 : $forum_id;
 
 		foreach ($attachment_data as $key => $attachment)
@@ -341,58 +334,51 @@ class mboximport_module
 
 			if (in_array($mode, array('post', 'reply', 'quote', 'edit')) && $attachment_is_valid)
 			{
-				if ($num_attachments < $cfg['max_attachments'])
+				/** @var \phpbb\attachment\manager $attachment_manager */
+				$attachment_manager = $phpbb_container->get('attachment.manager');
+				$filedata = $attachment_manager->upload($form_name, $forum_id, $attachment['local'], $attachment['local_storage'], $is_message, $attachment);
+				$error = $filedata['error'];
+
+				if ($filedata['post_attach'] && !sizeof($error))
 				{
-					/** @var \phpbb\attachment\manager $attachment_manager */
-					$attachment_manager = $phpbb_container->get('attachment.manager');
-					$filedata = $attachment_manager->upload($form_name, $forum_id, $attachment['local'], $attachment['local_storage'], $is_message, $attachment);
-					$error = $filedata['error'];
+					$sql_ary = array(
+						'physical_filename'	=> $filedata['physical_filename'],
+						'attach_comment'	=> $attachment['attach_comment'],
+						'real_filename'		=> $filedata['real_filename'],
+						'extension'			=> $filedata['extension'],
+						'mimetype'			=> $filedata['mimetype'],
+						'filesize'			=> $filedata['filesize'],
+						'filetime'			=> $filedata['filetime'],
+						'thumbnail'			=> $filedata['thumbnail'],
+						'is_orphan'			=> 1,
+						'in_message'		=> ($is_message) ? 1 : 0,
+						'poster_id'			=> $user->data['user_id'],
+					);
 
-					if ($filedata['post_attach'] && !sizeof($error))
-					{
-						$sql_ary = array(
-							'physical_filename'	=> $filedata['physical_filename'],
-							'attach_comment'	=> $attachment['attach_comment'],
-							'real_filename'		=> $filedata['real_filename'],
-							'extension'			=> $filedata['extension'],
-							'mimetype'			=> $filedata['mimetype'],
-							'filesize'			=> $filedata['filesize'],
-							'filetime'			=> $filedata['filetime'],
-							'thumbnail'			=> $filedata['thumbnail'],
-							'is_orphan'			=> 1,
-							'in_message'		=> ($is_message) ? 1 : 0,
-							'poster_id'			=> $user->data['user_id'],
-						);
+					$db->sql_query('INSERT INTO ' . ATTACHMENTS_TABLE . ' ' . $db->sql_build_array('INSERT', $sql_ary));
 
-						$db->sql_query('INSERT INTO ' . ATTACHMENTS_TABLE . ' ' . $db->sql_build_array('INSERT', $sql_ary));
+					$attachment_data[$key] = array(
+						'attach_id'		=> $db->sql_nextid(),
+						'is_orphan'		=> 1,
+						'real_filename'	=> $filedata['real_filename'],
+						'attach_comment'=> $attachment['attach_comment'],
+						'filesize'		=> $filedata['filesize'],
+					);
 
-						$attachment_data[$key] = array(
-							'attach_id'		=> $db->sql_nextid(),
-							'is_orphan'		=> 1,
-							'real_filename'	=> $filedata['real_filename'],
-							'attach_comment'=> $attachment['attach_comment'],
-							'filesize'		=> $filedata['filesize'],
-						);
-
-						// TODO adjust this in the 'HTML to BBcode'
+					// TODO adjust this in the 'HTML to BBcode'
 //						$this->message = preg_replace_callback('#\[attachment=([0-9]+)\](.*?)\[\/attachment\]#', function ($match) {
 //							return '[attachment='.($match[1] + 1).']' . $match[2] . '[/attachment]';
 //						}, $this->message);
 
-						// This Variable is set to false here, because Attachments are entered into the
-						// Database in two modes, one if the id_list is 0 and the second one if post_attach is true
-						// Since post_attach is automatically switched to true if an Attachment got added to the filesystem,
-						// but we are assigning an id of 0 here, we have to reset the post_attach variable to false.
-						//
-						// This is very relevant, because it could happen that the post got not submitted, but we do not
-						// know this circumstance here. We could be at the posting page or we could be redirected to the entered
-						// post. :)
-						$filedata['post_attach'] = false;
-					}
-				}
-				else
-				{
-					$error[] = $lang->lang('TOO_MANY_ATTACHMENTS', (int) $cfg['max_attachments']);
+					// This Variable is set to false here, because Attachments are entered into the
+					// Database in two modes, one if the id_list is 0 and the second one if post_attach is true
+					// Since post_attach is automatically switched to true if an Attachment got added to the filesystem,
+					// but we are assigning an id of 0 here, we have to reset the post_attach variable to false.
+					//
+					// This is very relevant, because it could happen that the post got not submitted, but we do not
+					// know this circumstance here. We could be at the posting page or we could be redirected to the entered
+					// post. :)
+					$filedata['post_attach'] = false;
 				}
 			}
 		}
