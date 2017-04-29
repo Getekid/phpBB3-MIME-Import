@@ -185,6 +185,27 @@ class mboximport_module
 		$message = (isset($analysed['Data'])) ? $analysed['Data'] : '';
 		$message_phpbb = $this->html_to_bbcode($message);
 
+		// Add attachments
+		if (isset($analysed['Related']))
+		{
+			$attachment_data = array();
+			foreach ($analysed['Related'] as $attachment)
+			{
+				$filename = tempnam(sys_get_temp_dir(), unique_id() . '-');
+				file_put_contents($filename, $attachment['Data']);
+				$attachment_data[] = array(
+					'attach_comment'	=> '',
+					'realname'			=> $attachment['FileName'],
+					'size'				=> 0,
+					'type'				=> $attachment['SubType'],
+					'local'				=> true,
+					'local_storage'		=> $filename,
+				);
+			}
+			// TODO include an error handling
+			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode,4, false, $attachment_data);
+		}
+
 		// Put together the data for the post
 		//$message_phpbb = (isset($analysed['Data'])) ? $analysed['Data'] : ''; // TODO convert HTML code to BBcode
 		$poll = $uid = $bitfield = $flags = '';
@@ -202,6 +223,8 @@ class mboximport_module
 			// Message Body
 			'message' => $message_phpbb,
 			'message_md5' => md5($message_phpbb),
+			// Attachments
+			'attachment_data' => (!empty($attachment_data)) ? $attachment_data : 0,
 			// Values from generate_text_for_storage()
 			'bbcode_bitfield' => $bitfield,
 			'bbcode_uid' => $uid,
@@ -278,6 +301,102 @@ class mboximport_module
 		$db->sql_freeresult($result);
 
 		return $row['topic_id'];
+	}
+
+	/**
+	 * @param string $form_name
+	 * @param string $mode
+	 * @param int    $forum_id
+	 * @param bool   $is_message
+	 * @param array  $attachment_data
+	 * @return array
+	 */
+	public function parse_attachments($form_name, $mode, $forum_id, $is_message = false, $attachment_data)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		/** @var \phpbb\config\config $config */
+		$config = $phpbb_container->get('config');
+
+		/** @var \phpbb\language\language $lang */
+		$lang = $phpbb_container->get('language');
+
+		/** @var \phpbb\user $user */
+		$user = $phpbb_container->get('user');
+
+		$error = array();
+
+		$num_attachments = sizeof($attachment_data);
+
+		$cfg = array();
+		$cfg['max_attachments'] = ($is_message) ? $config['max_attachments_pm'] : $config['max_attachments'];
+		$forum_id = ($is_message) ? 0 : $forum_id;
+
+		foreach ($attachment_data as $key => $attachment)
+		{
+			$attachment_is_valid = (!empty($attachment) && $attachment['realname'] !== 'none' && trim($attachment['realname']));
+
+			if (in_array($mode, array('post', 'reply', 'quote', 'edit')) && $attachment_is_valid)
+			{
+				if ($num_attachments < $cfg['max_attachments'])
+				{
+					/** @var \phpbb\attachment\manager $attachment_manager */
+					$attachment_manager = $phpbb_container->get('attachment.manager');
+					$filedata = $attachment_manager->upload($form_name, $forum_id, $attachment['local'], $attachment['local_storage'], $is_message, $attachment);
+					$error = $filedata['error'];
+
+					if ($filedata['post_attach'] && !sizeof($error))
+					{
+						$sql_ary = array(
+							'physical_filename'	=> $filedata['physical_filename'],
+							'attach_comment'	=> $attachment['attach_comment'],
+							'real_filename'		=> $filedata['real_filename'],
+							'extension'			=> $filedata['extension'],
+							'mimetype'			=> $filedata['mimetype'],
+							'filesize'			=> $filedata['filesize'],
+							'filetime'			=> $filedata['filetime'],
+							'thumbnail'			=> $filedata['thumbnail'],
+							'is_orphan'			=> 1,
+							'in_message'		=> ($is_message) ? 1 : 0,
+							'poster_id'			=> $user->data['user_id'],
+						);
+
+						$db->sql_query('INSERT INTO ' . ATTACHMENTS_TABLE . ' ' . $db->sql_build_array('INSERT', $sql_ary));
+
+						$attachment_data[$key] = array(
+							'attach_id'		=> $db->sql_nextid(),
+							'is_orphan'		=> 1,
+							'real_filename'	=> $filedata['real_filename'],
+							'attach_comment'=> $attachment['attach_comment'],
+							'filesize'		=> $filedata['filesize'],
+						);
+
+						// TODO adjust this in the 'HTML to BBcode'
+//						$this->message = preg_replace_callback('#\[attachment=([0-9]+)\](.*?)\[\/attachment\]#', function ($match) {
+//							return '[attachment='.($match[1] + 1).']' . $match[2] . '[/attachment]';
+//						}, $this->message);
+
+						// This Variable is set to false here, because Attachments are entered into the
+						// Database in two modes, one if the id_list is 0 and the second one if post_attach is true
+						// Since post_attach is automatically switched to true if an Attachment got added to the filesystem,
+						// but we are assigning an id of 0 here, we have to reset the post_attach variable to false.
+						//
+						// This is very relevant, because it could happen that the post got not submitted, but we do not
+						// know this circumstance here. We could be at the posting page or we could be redirected to the entered
+						// post. :)
+						$filedata['post_attach'] = false;
+					}
+				}
+				else
+				{
+					$error[] = $lang->lang('TOO_MANY_ATTACHMENTS', (int) $cfg['max_attachments']);
+				}
+			}
+		}
+		return (sizeof($error)) ? $error : $attachment_data;
 	}
 
 	/**
