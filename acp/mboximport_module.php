@@ -200,6 +200,7 @@ class mboximport_module
 					'type'				=> $attachment['SubType'],
 					'local'				=> true,
 					'local_storage'		=> $filename,
+					'content_id'		=> $attachment['ContentID'],
 				);
 			}
 			// TODO include an error handling
@@ -353,6 +354,7 @@ class mboximport_module
 						'is_orphan'			=> 1,
 						'in_message'		=> ($is_message) ? 1 : 0,
 						'poster_id'			=> $user->data['user_id'],
+						'content_id'		=> $attachment['content_id'],
 					);
 
 					$db->sql_query('INSERT INTO ' . ATTACHMENTS_TABLE . ' ' . $db->sql_build_array('INSERT', $sql_ary));
