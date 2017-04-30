@@ -208,7 +208,6 @@ class mboximport_module
 		$message_phpbb = $this->html_to_bbcode($message, $attachment_data);
 
 		// Put together the data for the post
-		//$message_phpbb = (isset($analysed['Data'])) ? $analysed['Data'] : ''; // TODO convert HTML code to BBcode
 		$poll = $uid = $bitfield = $flags = '';
 		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags, true, true);
 		$data = array(
