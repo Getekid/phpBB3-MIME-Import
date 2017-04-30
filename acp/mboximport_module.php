@@ -275,24 +275,27 @@ class mboximport_module
 
 		$message_phpbb = $proc->transformToXML($doc);
 
-		// Build the index array
-		$attachment_data = array_reverse($attachment_data);
-		$attachment_index = array();
-		foreach ($attachment_data as $key => $attachment)
+		if (!empty($attachment_data))
 		{
-			$attachment_index[$attachment['content_id']] = array(
-				'key'			=> $key,
-				'real_filename'	=> $attachment['real_filename'],
-			);
+			// Build the index array
+			$attachment_data = array_reverse($attachment_data);
+			$attachment_index = array();
+			foreach ($attachment_data as $key => $attachment)
+			{
+				$attachment_index[$attachment['content_id']] = array(
+					'key'			=> $key,
+					'real_filename'	=> $attachment['real_filename'],
+				);
+			}
+			// Replace the Content ID with the attachment index
+			$message_phpbb = preg_replace_callback('#\[attachment=([a-z]{2}_[a-z0-9]{16})\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
+				return '[attachment='.$attachment_index[$match[1]]['key'].']' . $attachment_index[$match[1]]['real_filename'] . $match[2] . '[/attachment]';
+			}, $message_phpbb);
+			// Remove the formatting in the attachment BBcode
+			$message_phpbb = preg_replace_callback('#\[(b|i|u)\]([attachment=[0-9]+\].*?\[\/attachment\])\[\/(b|i|u)\]#', function ($match) {
+				return $match[2];
+			}, $message_phpbb);
 		}
-		// Replace the Content ID with the attachment index
-		$message_phpbb = preg_replace_callback('#\[attachment=([a-z]{2}_[a-z0-9]{16})\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
-			return '[attachment='.$attachment_index[$match[1]]['key'].']' . $attachment_index[$match[1]]['real_filename'] . $match[2] . '[/attachment]';
-		}, $message_phpbb);
-		// Remove the formatting in the attachment BBcode
-		$message_phpbb = preg_replace_callback('#\[(b|i|u)\]([attachment=[0-9]+\].*?\[\/attachment\])\[\/(b|i|u)\]#', function ($match) {
-			return $match[2];
-		}, $message_phpbb);
 
 		return $message_phpbb;
 	}
