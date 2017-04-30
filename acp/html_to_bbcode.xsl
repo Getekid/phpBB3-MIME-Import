@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="text"/>
+    <!-- Blockquotes -->
+    <xsl:template match="blockquote">[quote]<xsl:apply-templates/>[/quote]</xsl:template>
     <!-- Lists -->
     <xsl:template match="ul">[list]<xsl:apply-templates/>[/list]</xsl:template>
     <xsl:template match="ol">[list=1]<xsl:apply-templates/>[/list]</xsl:template>
