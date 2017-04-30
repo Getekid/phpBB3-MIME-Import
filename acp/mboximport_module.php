@@ -181,9 +181,31 @@ class mboximport_module
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
 		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
 
+		// Add attachments
+		if (isset($analysed['Related']))
+		{
+			$attachment_data = array();
+			foreach ($analysed['Related'] as $attachment)
+			{
+				$filename = tempnam(sys_get_temp_dir(), unique_id() . '-');
+				file_put_contents($filename, $attachment['Data']);
+				$attachment_data[] = array(
+					'attach_comment'	=> '',
+					'realname'			=> $attachment['FileName'],
+					'size'				=> 0,
+					'type'				=> $attachment['SubType'],
+					'local'				=> true,
+					'local_storage'		=> $filename,
+					'content_id'		=> $attachment['ContentID'],
+				);
+			}
+			// TODO include an error handling
+			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode,4, false, $attachment_data);
+		}
+
 		// Convert HTML in Data to BBcode
 		$message = (isset($analysed['Data'])) ? $analysed['Data'] : '';
-		$message_phpbb = $this->html_to_bbcode($message);
+		$message_phpbb = $this->html_to_bbcode($message, $attachment_data);
 
 		// Put together the data for the post
 		//$message_phpbb = (isset($analysed['Data'])) ? $analysed['Data'] : ''; // TODO convert HTML code to BBcode
@@ -202,6 +224,8 @@ class mboximport_module
 			// Message Body
 			'message' => $message_phpbb,
 			'message_md5' => md5($message_phpbb),
+			// Attachments
+			'attachment_data' => (!empty($attachment_data)) ? $attachment_data : 0,
 			// Values from generate_text_for_storage()
 			'bbcode_bitfield' => $bitfield,
 			'bbcode_uid' => $uid,
@@ -231,9 +255,10 @@ class mboximport_module
 	 * Converts HTML code to BBcode
 	 *
 	 * @param string $message
+	 * @param array $attachment_data
 	 * @return string
 	 */
-	private function html_to_bbcode($message)
+	private function html_to_bbcode($message, $attachment_data)
 	{
 		// Remove break lines and create those defined by the html code
 		$message = preg_replace("/\r|\n/","", $message);
@@ -250,6 +275,25 @@ class mboximport_module
 		$proc->importStyleSheet($xsl);
 
 		$message_phpbb = $proc->transformToXML($doc);
+
+		// Build the index array
+		$attachment_data = array_reverse($attachment_data);
+		$attachment_index = array();
+		foreach ($attachment_data as $key => $attachment)
+		{
+			$attachment_index[$attachment['content_id']] = array(
+				'key'			=> $key,
+				'real_filename'	=> $attachment['real_filename'],
+			);
+		}
+		// Replace the Content ID with the attachment index
+		$message_phpbb = preg_replace_callback('#\[attachment=([a-z]{2}_[a-z0-9]{16})\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
+			return '[attachment='.$attachment_index[$match[1]]['key'].']' . $attachment_index[$match[1]]['real_filename'] . $match[2] . '[/attachment]';
+		}, $message_phpbb);
+		// Remove the formatting in the attachment BBcode
+		$message_phpbb = preg_replace_callback('#\[(b|i|u)\]([attachment=[0-9]+\].*?\[\/attachment\])\[\/(b|i|u)\]#', function ($match) {
+			return $match[2];
+		}, $message_phpbb);
 
 		return $message_phpbb;
 	}
@@ -278,6 +322,87 @@ class mboximport_module
 		$db->sql_freeresult($result);
 
 		return $row['topic_id'];
+	}
+
+	/**
+	 * Parses the attachments to be included in the post
+	 *
+	 * @param string $form_name
+	 * @param string $mode
+	 * @param int    $forum_id
+	 * @param bool   $is_message
+	 * @param array  $attachment_data
+	 * @return array
+	 */
+	public function parse_attachments($form_name, $mode, $forum_id, $is_message = false, $attachment_data)
+	{
+		global $phpbb_container;
+
+		/** @var \phpbb\db\driver\driver_interface $db */
+		$db = $phpbb_container->get('dbal.conn');
+
+		/** @var \phpbb\language\language $lang */
+		$lang = $phpbb_container->get('language');
+
+		/** @var \phpbb\user $user */
+		$user = $phpbb_container->get('user');
+
+		$error = array();
+
+		$forum_id = ($is_message) ? 0 : $forum_id;
+
+		foreach ($attachment_data as $key => $attachment)
+		{
+			$attachment_is_valid = (!empty($attachment) && $attachment['realname'] !== 'none' && trim($attachment['realname']));
+
+			if (in_array($mode, array('post', 'reply', 'quote', 'edit')) && $attachment_is_valid)
+			{
+				/** @var \phpbb\attachment\manager $attachment_manager */
+				$attachment_manager = $phpbb_container->get('attachment.manager');
+				$filedata = $attachment_manager->upload($form_name, $forum_id, $attachment['local'], $attachment['local_storage'], $is_message, $attachment);
+				$error = $filedata['error']; // TODO if it exists output it in the return $error array
+
+				if ($filedata['post_attach'] && !sizeof($error))
+				{
+					$sql_ary = array(
+						'physical_filename'	=> $filedata['physical_filename'],
+						'attach_comment'	=> $attachment['attach_comment'],
+						'real_filename'		=> $filedata['real_filename'],
+						'extension'			=> $filedata['extension'],
+						'mimetype'			=> $filedata['mimetype'],
+						'filesize'			=> $filedata['filesize'],
+						'filetime'			=> $filedata['filetime'],
+						'thumbnail'			=> $filedata['thumbnail'],
+						'is_orphan'			=> 1,
+						'in_message'		=> ($is_message) ? 1 : 0,
+						'poster_id'			=> $user->data['user_id'],
+						'content_id'		=> $attachment['content_id'],
+					);
+
+					$db->sql_query('INSERT INTO ' . ATTACHMENTS_TABLE . ' ' . $db->sql_build_array('INSERT', $sql_ary));
+
+					$attachment_data[$key] = array(
+						'attach_id'		=> $db->sql_nextid(),
+						'is_orphan'		=> 1,
+						'real_filename'	=> $filedata['real_filename'],
+						'attach_comment'=> $attachment['attach_comment'],
+						'filesize'		=> $filedata['filesize'],
+						'content_id'	=> $attachment['content_id'],
+					);
+
+					// This Variable is set to false here, because Attachments are entered into the
+					// Database in two modes, one if the id_list is 0 and the second one if post_attach is true
+					// Since post_attach is automatically switched to true if an Attachment got added to the filesystem,
+					// but we are assigning an id of 0 here, we have to reset the post_attach variable to false.
+					//
+					// This is very relevant, because it could happen that the post got not submitted, but we do not
+					// know this circumstance here. We could be at the posting page or we could be redirected to the entered
+					// post. :)
+					$filedata['post_attach'] = false;
+				}
+			}
+		}
+		return (sizeof($error)) ? $error : $attachment_data;
 	}
 
 	/**
