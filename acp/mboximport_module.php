@@ -181,10 +181,6 @@ class mboximport_module
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
 		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
 
-		// Convert HTML in Data to BBcode
-		$message = (isset($analysed['Data'])) ? $analysed['Data'] : '';
-		$message_phpbb = $this->html_to_bbcode($message);
-
 		// Add attachments
 		if (isset($analysed['Related']))
 		{
@@ -206,6 +202,10 @@ class mboximport_module
 			// TODO include an error handling
 			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode,4, false, $attachment_data);
 		}
+
+		// Convert HTML in Data to BBcode
+		$message = (isset($analysed['Data'])) ? $analysed['Data'] : '';
+		$message_phpbb = $this->html_to_bbcode($message, $attachment_data);
 
 		// Put together the data for the post
 		//$message_phpbb = (isset($analysed['Data'])) ? $analysed['Data'] : ''; // TODO convert HTML code to BBcode
@@ -255,9 +255,10 @@ class mboximport_module
 	 * Converts HTML code to BBcode
 	 *
 	 * @param string $message
+	 * @param array $attachment_data
 	 * @return string
 	 */
-	private function html_to_bbcode($message)
+	private function html_to_bbcode($message, $attachment_data)
 	{
 		// Remove break lines and create those defined by the html code
 		$message = preg_replace("/\r|\n/","", $message);
@@ -274,6 +275,25 @@ class mboximport_module
 		$proc->importStyleSheet($xsl);
 
 		$message_phpbb = $proc->transformToXML($doc);
+
+		// Build the index array
+		$attachment_data = array_reverse($attachment_data);
+		$attachment_index = array();
+		foreach ($attachment_data as $key => $attachment)
+		{
+			$attachment_index[$attachment['content_id']] = array(
+				'key'			=> $key,
+				'real_filename'	=> $attachment['real_filename'],
+			);
+		}
+		// Replace the Content ID with the attachment index
+		$message_phpbb = preg_replace_callback('#\[attachment=([a-z]{2}_[a-z0-9]{16})\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
+			return '[attachment='.$attachment_index[$match[1]]['key'].']' . $attachment_index[$match[1]]['real_filename'] . $match[2] . '[/attachment]';
+		}, $message_phpbb);
+		// Remove the formatting in the attachment BBcode
+		$message_phpbb = preg_replace_callback('#\[(b|i|u)\]([attachment=[0-9]+\].*?\[\/attachment\])\[\/(b|i|u)\]#', function ($match) {
+			return $match[2];
+		}, $message_phpbb);
 
 		return $message_phpbb;
 	}
@@ -365,12 +385,8 @@ class mboximport_module
 						'real_filename'	=> $filedata['real_filename'],
 						'attach_comment'=> $attachment['attach_comment'],
 						'filesize'		=> $filedata['filesize'],
+						'content_id'	=> $attachment['content_id'],
 					);
-
-					// TODO adjust this in the 'HTML to BBcode'
-//						$this->message = preg_replace_callback('#\[attachment=([0-9]+)\](.*?)\[\/attachment\]#', function ($match) {
-//							return '[attachment='.($match[1] + 1).']' . $match[2] . '[/attachment]';
-//						}, $this->message);
 
 					// This Variable is set to false here, because Attachments are entered into the
 					// Database in two modes, one if the id_list is 0 and the second one if post_attach is true

@@ -16,10 +16,11 @@
             <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    <!-- Images -->
+    <!-- Images and Attachments -->
     <xsl:template match="img">
         <xsl:choose>
             <xsl:when test="substring(@src, 1, 7)='http://' or substring(@src, 1, 8)='https://'">[img]<xsl:value-of select="@src"/>[/img]</xsl:when>
+            <xsl:when test="substring(@src, 1, 4)='cid:'">[attachment=<xsl:value-of select="substring(@src, 5)"/>][/attachment]</xsl:when>
         </xsl:choose>
     </xsl:template>
 </xsl:stylesheet>
