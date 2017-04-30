@@ -325,6 +325,8 @@ class mboximport_module
 	}
 
 	/**
+	 * Parses the attachments to be included in the post
+	 *
 	 * @param string $form_name
 	 * @param string $mode
 	 * @param int    $forum_id
@@ -358,7 +360,7 @@ class mboximport_module
 				/** @var \phpbb\attachment\manager $attachment_manager */
 				$attachment_manager = $phpbb_container->get('attachment.manager');
 				$filedata = $attachment_manager->upload($form_name, $forum_id, $attachment['local'], $attachment['local_storage'], $is_message, $attachment);
-				$error = $filedata['error'];
+				$error = $filedata['error']; // TODO if it exists output it in the return $error array
 
 				if ($filedata['post_attach'] && !sizeof($error))
 				{
