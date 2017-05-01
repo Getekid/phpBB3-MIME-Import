@@ -292,7 +292,7 @@ class mboximport_module
 				return '[attachment='.$attachment_index[$match[1]]['key'].']' . $attachment_index[$match[1]]['real_filename'] . $match[2] . '[/attachment]';
 			}, $message_phpbb);
 			// Remove the formatting in the attachment BBcode
-			$message_phpbb = preg_replace_callback('#\[(b|i|u)\]([attachment=[0-9]+\].*?\[\/attachment\])\[\/(b|i|u)\]#', function ($match) {
+			$message_phpbb = preg_replace_callback('#\[(b|i|u)\](\[attachment=[0-9]+\].*?\[\/attachment\])\[\/(b|i|u)\]#', function ($match) {
 				return $match[2];
 			}, $message_phpbb);
 			// Clean up the whitespaces
