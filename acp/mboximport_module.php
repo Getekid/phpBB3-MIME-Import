@@ -126,13 +126,14 @@ class mboximport_module
 					{
 						if ($mime->Analyze($decoded[$message], $results))
 						{
-							$post_data = $this->parse_mime_message($decoded[$message], $results);
-							// Submit the post
-							if ($this->message_not_imported($post_data['message_id']))
+							if ($this->message_not_imported($decoded['Headers']['message-id:']))
 							{
 								// We need to post as ANONYMOUS user
 								$user_id = $user->data['user_id'];
 								$user->session_kill();
+								// Parse the data from the mime message
+								$post_data = $this->parse_mime_message($decoded[$message], $results);
+								// Submit the post
 								submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
 								$user->session_create($user_id, true);
 								$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
