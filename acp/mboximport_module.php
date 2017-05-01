@@ -199,8 +199,8 @@ class mboximport_module
 					'content_id'		=> $attachment['ContentID'],
 				);
 			}
-			// TODO include an error handling
 			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode,4, false, $attachment_data);
+
 		}
 
 		// Convert HTML in Data to BBcode
@@ -362,7 +362,17 @@ class mboximport_module
 				/** @var \phpbb\attachment\manager $attachment_manager */
 				$attachment_manager = $phpbb_container->get('attachment.manager');
 				$filedata = $attachment_manager->upload($form_name, $forum_id, $attachment['local'], $attachment['local_storage'], $is_message, $attachment);
-				$error = $filedata['error']; // TODO if it exists output it in the return $error array
+				$error = $filedata['error'];
+
+				if (sizeof($error))
+				{
+					$error_msg = '';
+					foreach ($error as $error_message)
+					{
+						$error_msg .= '<br />' . $lang->lang($error_message); // TODO Translation doesn't work
+					}
+					trigger_error('"' . $attachment['realname'] . '"' . ' error: ' . $error_msg . adm_back_link($this->u_action));
+				}
 
 				if ($filedata['post_attach'] && !sizeof($error))
 				{
