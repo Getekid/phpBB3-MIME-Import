@@ -295,6 +295,8 @@ class mboximport_module
 			$message_phpbb = preg_replace_callback('#\[(b|i|u)\]([attachment=[0-9]+\].*?\[\/attachment\])\[\/(b|i|u)\]#', function ($match) {
 				return $match[2];
 			}, $message_phpbb);
+			// Clean up the whitespaces
+			$message_phpbb = preg_replace("#\302\240#", ' ' , $message_phpbb);
 		}
 
 		return $message_phpbb;
