@@ -264,6 +264,9 @@ class mboximport_module
 		$message = preg_replace("/\r|\n/","", $message);
 		$message = preg_replace('/\<br\>/', "\n", $message);
 
+		// Remove the MS Word '<o:p>' tags
+		$message = preg_replace('/\<\/?o:p\>/', '', $message);
+
 		$doc = new DOMDocument();
 		$doc->loadHTML('<?xml encoding="utf-8" ?>' . $message);
 		$doc->saveHTML();
