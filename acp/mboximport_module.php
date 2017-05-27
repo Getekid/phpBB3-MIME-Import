@@ -126,7 +126,7 @@ class mboximport_module
 					{
 						if ($mime->Analyze($decoded[$message], $results))
 						{
-							if ($this->message_not_imported($decoded['Headers']['message-id:']))
+							if ($this->message_not_imported($decoded[$message]['Headers']['message-id:']))
 							{
 								// We need to post as ANONYMOUS user
 								$user_id = $user->data['user_id'];
