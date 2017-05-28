@@ -115,7 +115,7 @@ class mboximport_module
 				 * Set to 0 for parsing a single message file
 				 * Set to 1 for parsing multiple messages in a single file in the mbox format
 				 */
-				$mime->mbox = 1;
+				$mime->mbox = ($mode == 'import_file') ? 1 : (($mode == 'import_dir') ? 0 : 0);
 
 				/*
 				 * Set to 0 for not decoding the message bodies

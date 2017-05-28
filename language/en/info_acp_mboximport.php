@@ -21,6 +21,7 @@ $lang = array_merge($lang, array(
 	'ACP_MBOXIMPORT_IMPORT_FILE'					=> 'Import from file',
 	'ACP_MBOXIMPORT_IMPORT_FILE_EXPLAIN'			=> 'Import an Mbox file',
 	'ACP_MBOXIMPORT_PATH_FILE'						=> 'File path',
+	'ACP_MBOXIMPORT_IMPORT_FILE_WARNING'			=> 'Make sure the is no \'From\' at the beginning of any line in the file as it will break the import. If so please use the \'Import from directory\' option instead.',
 	// Import from directory
 	'ACP_MBOXIMPORT_IMPORT_DIR'						=> 'Import from directory',
 	'ACP_MBOXIMPORT_IMPORT_DIR_EXPLAIN'				=> 'Import multiple Mbox files from a directory',
