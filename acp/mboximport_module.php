@@ -150,7 +150,7 @@ class mboximport_module
 					{
 						$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . $column;
 					}
-					trigger_error($error_msg . adm_back_link($this->u_action));
+					trigger_error($file . ': ' . $error_msg . adm_back_link($this->u_action));
 				}
 				else
 				{
@@ -175,7 +175,7 @@ class mboximport_module
 							}
 							else
 							{
-								trigger_error($lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR') . ' ' . $mime->error . adm_back_link($this->u_action));
+								trigger_error($file . ': ' . $lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR') . ' ' . $mime->error . adm_back_link($this->u_action));
 							}
 						}
 					}
@@ -185,7 +185,7 @@ class mboximport_module
 						$error_msg = ($lang->lang('WARNING')) . ': ' . $mime->warnings[$w] . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $w;
 						if ($mime->track_lines && $mime->GetPositionLine($w, $line, $column))
 							$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . ' ' . $column;
-						trigger_error($error_msg . adm_back_link($this->u_action));
+						trigger_error($file . ': ' . $error_msg . adm_back_link($this->u_action));
 					}
 				}
 			}
