@@ -150,7 +150,7 @@ class mboximport_module
 				);
 
 				$parameters=array(
-					'File'=>$file,
+					'File'=>isset($dir)? $dir . $file : $file,
 					'SkipBody'=>0,
 				);
 
