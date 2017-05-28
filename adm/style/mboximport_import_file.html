@@ -1,0 +1,30 @@
+<!-- INCLUDE overall_header.html -->
+
+<h1>{L_ACP_MBOXIMPORT_IMPORT_FILE}</h1>
+
+<p>{L_ACP_MBOXIMPORT_IMPORT_FILE_EXPLAIN}</p>
+
+<!-- IF not S_MIME_PARSER_CLASS -->
+<div class="errorbox">
+	<h3>{L_WARNING}</h3>
+	<p>{L_ACP_MBOXIMPORT_MIME_PARSER_CLASS_NOT_FOUND}</p>
+</div>
+<!-- ENDIF -->
+
+<form id="MBOXIMPORT_IMPORT_FILE" method="post" action="{U_ACTION}">
+
+	<fieldset>
+		<legend>{L_ACP_MBOXIMPORT_IMPORT_FILE}</legend>
+		<dl>
+			<dt><label for="mboximport_path_file">{L_ACP_MBOXIMPORT_PATH_FILE}{L_COLON}</label></dt>
+			<dd><input type="text" id="mboximport_path_file" name="mboximport_path_file" size="50" /></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset class="submit-buttons">
+		<input class="button1" type="submit" id="submit" name="submit" value="{L_SUBMIT}" />
+		{S_FORM_TOKEN}
+	</fieldset>
+</form>
+
+<!-- INCLUDE overall_footer.html -->

@@ -41,19 +41,46 @@ class mboximport_module
 		/** @var \phpbb\user $user */
 		$user = $phpbb_container->get('user');
 
-		// Load a template from adm/style for our ACP page
-		$this->tpl_name = 'mboximport_import';
+		switch ($mode)
+		{
+			case 'import_file':
+				// Load a template from adm/style for our ACP page
+				$this->tpl_name = 'mboximport_import_file';
 
-		// Set the page title for our ACP page
-		$this->page_title = $lang->lang('ACP_MBOXIMPORT_IMPORT');
+				// Set the page title for our ACP page
+				$this->page_title = $lang->lang('ACP_MBOXIMPORT_IMPORT_FILE');
 
-		add_form_key('getekid_mboximport_import');
+				add_form_key('getekid_mboximport_import_file');
+			break;
+
+			case 'import_dir':
+				// Load a template from adm/style for our ACP page
+				$this->tpl_name = 'mboximport_import_dir';
+
+				// Set the page title for our ACP page
+				$this->page_title = $lang->lang('ACP_MBOXIMPORT_IMPORT_DIR');
+
+				add_form_key('getekid_mboximport_import_dir');
+			break;
+		}
 
 		if ($request->is_set_post('submit'))
 		{
-			if (!check_form_key('getekid_mboximport_import'))
+			switch ($mode)
 			{
-				trigger_error('FORM_INVALID');
+				case 'import_file':
+					if (!check_form_key('getekid_mboximport_import_file'))
+					{
+						trigger_error('FORM_INVALID');
+					}
+				break;
+
+				case 'import_dir':
+					if (!check_form_key('getekid_mboximport_import_dir'))
+					{
+						trigger_error('FORM_INVALID');
+					}
+				break;
 			}
 			if (!class_exists('mime_parser_class'))
 			{

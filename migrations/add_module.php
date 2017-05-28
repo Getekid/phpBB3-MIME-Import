@@ -22,7 +22,7 @@ class add_module extends \phpbb\db\migration\migration
 			array('module.add', array(
 				'acp', 'ACP_MBOXIMPORT', array(
 					'module_basename'	=> '\getekid\mboximport\acp\mboximport_module',
-					'modes'				=> array('import'),
+					'modes'				=> array('import_file', 'import_dir'),
 				),
 			)),
 		);
