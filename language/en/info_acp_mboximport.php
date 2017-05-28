@@ -28,6 +28,8 @@ $lang = array_merge($lang, array(
 
 	// Messages
 	'ACP_MBOXIMPORT_MIME_PARSER_CLASS_NOT_FOUND'	=> 'MIME Parser class not found',
+	'ACP_MBOXIMPORT_NOT_FILE'						=> 'Input is not a file',
+	'ACP_MBOXIMPORT_NOT_DIR'						=> 'Input is not a directory',
 	'ACP_MBOXIMPORT_MIME_DECODING_ERROR'			=> 'MIME message decoding error:',
 	'ACP_MBOXIMPORT_POSITION'						=> 'at position',
 	'ACP_MBOXIMPORT_LINE'							=> 'line',

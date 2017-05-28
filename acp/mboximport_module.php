@@ -79,7 +79,13 @@ class mboximport_module
 						trigger_error('FORM_INVALID');
 					}
 
-					$files = array($request->variable('mboximport_path_file', ''));
+					$file = $request->variable('mboximport_path_file', '');
+					if (!is_file($file))
+					{
+						trigger_error($lang->lang('ACP_MBOXIMPORT_NOT_FILE') . adm_back_link($this->u_action));
+					}
+
+					$files = array($file);
 				break;
 
 				case 'import_dir':
@@ -89,6 +95,11 @@ class mboximport_module
 					}
 
 					$dir = $request->variable('mboximport_path_dir', '');
+					if (!is_dir($dir))
+					{
+						trigger_error($lang->lang('ACP_MBOXIMPORT_NOT_DIR') . adm_back_link($this->u_action));
+					}
+
 					$files = array_diff(scandir($dir), array('.', '..'));
 				break;
 			}
