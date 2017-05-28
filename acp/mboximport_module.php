@@ -41,117 +41,163 @@ class mboximport_module
 		/** @var \phpbb\user $user */
 		$user = $phpbb_container->get('user');
 
-		// Load a template from adm/style for our ACP page
-		$this->tpl_name = 'mboximport_import';
+		switch ($mode)
+		{
+			case 'import_file':
+				// Load a template from adm/style for our ACP page
+				$this->tpl_name = 'mboximport_import_file';
 
-		// Set the page title for our ACP page
-		$this->page_title = $lang->lang('ACP_MBOXIMPORT_IMPORT');
+				// Set the page title for our ACP page
+				$this->page_title = $lang->lang('ACP_MBOXIMPORT_IMPORT_FILE');
 
-		add_form_key('getekid_mboximport_import');
+				add_form_key('getekid_mboximport_import_file');
+			break;
+
+			case 'import_dir':
+				// Load a template from adm/style for our ACP page
+				$this->tpl_name = 'mboximport_import_dir';
+
+				// Set the page title for our ACP page
+				$this->page_title = $lang->lang('ACP_MBOXIMPORT_IMPORT_DIR');
+
+				add_form_key('getekid_mboximport_import_dir');
+			break;
+		}
 
 		if ($request->is_set_post('submit'))
 		{
-			if (!check_form_key('getekid_mboximport_import'))
-			{
-				trigger_error('FORM_INVALID');
-			}
 			if (!class_exists('mime_parser_class'))
 			{
 				trigger_error($lang->lang('ACP_MBOXIMPORT_MIME_PARSER_CLASS_NOT_FOUND') . adm_back_link($this->u_action));
 			}
 
-			/*
-			 * Using the example from test_message_decoder.php,v 1.13 2012/04/11 09:28:19 mlemos Exp $
-			 */
-			$message_file = ($request->variable('mboximport_path', ''));
-			$mime = new mime_parser_class;
-
-			/*
-			 * Set to 0 for parsing a single message file
-			 * Set to 1 for parsing multiple messages in a single file in the mbox format
-			 */
-			$mime->mbox = 1;
-
-			/*
-			 * Set to 0 for not decoding the message bodies
-			 */
-			$mime->decode_bodies = 1;
-
-			/*
-			 * Set to 0 to make syntax errors make the decoding fail
-			 */
-			$mime->ignore_syntax_errors = 1;
-
-			/*
-			 * Set to 0 to avoid keeping track of the lines of the message data
-			 */
-			$mime->track_lines = 1;
-
-			/*
-			 * Set to 1 to make message parts be saved with original file names
-			 * when the SaveBody parameter is used.
-			 */
-			$mime->use_part_file_names = 0;
-
-			/*
-			 * Set this variable with entries that define MIME types not yet
-			 * recognized by the Analyze class function.
-			 */
-			$mime->custom_mime_types = array(
-				'application/vnd.openxmlformats-officedocument.wordprocessingml.document'=>array(
-					'Type' => 'ms-word',
-					'Description' => 'Word processing document in Microsoft Office OpenXML format'
-				)
-			);
-
-			$parameters=array(
-				'File'=>$message_file,
-				'SkipBody'=>0,
-			);
-
-			if (!$mime->Decode($parameters, $decoded))
+			switch ($mode)
 			{
-				$error_msg = $lang->lang('ACP_MBOXIMPORT_MIME_DECODING_ERROR') . ' ' . $mime->error . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $mime->error_position;
-				if ($mime->track_lines && $mime->GetPositionLine($mime->error_position, $line, $column))
-				{
-					$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . $column;
-				}
-				trigger_error($error_msg . adm_back_link($this->u_action));
-			}
-			else
-			{
-				for ($message = 0; $message < count($decoded); $message++)
-				{
-					if ($mime->decode_bodies)
+				case 'import_file':
+					if (!check_form_key('getekid_mboximport_import_file'))
 					{
-						if ($mime->Analyze($decoded[$message], $results))
+						trigger_error('FORM_INVALID');
+					}
+
+					$file = $request->variable('mboximport_path_file', '');
+					if (!is_file($file))
+					{
+						trigger_error($lang->lang('ACP_MBOXIMPORT_NOT_FILE') . adm_back_link($this->u_action));
+					}
+
+					$files = array($file);
+				break;
+
+				case 'import_dir':
+					if (!check_form_key('getekid_mboximport_import_dir'))
+					{
+						trigger_error('FORM_INVALID');
+					}
+
+					$dir = $request->variable('mboximport_path_dir', '');
+					if (!is_dir($dir))
+					{
+						trigger_error($lang->lang('ACP_MBOXIMPORT_NOT_DIR') . adm_back_link($this->u_action));
+					}
+
+					$files = array_diff(scandir($dir), array('.', '..'));
+				break;
+			}
+
+			foreach ($files as $file)
+			{
+				/*
+				 * Using the example from test_message_decoder.php,v 1.13 2012/04/11 09:28:19 mlemos Exp $
+				 */
+				$mime = new mime_parser_class;
+
+				/*
+				 * Set to 0 for parsing a single message file
+				 * Set to 1 for parsing multiple messages in a single file in the mbox format
+				 */
+				$mime->mbox = 1;
+
+				/*
+				 * Set to 0 for not decoding the message bodies
+				 */
+				$mime->decode_bodies = 1;
+
+				/*
+				 * Set to 0 to make syntax errors make the decoding fail
+				 */
+				$mime->ignore_syntax_errors = 1;
+
+				/*
+				 * Set to 0 to avoid keeping track of the lines of the message data
+				 */
+				$mime->track_lines = 1;
+
+				/*
+				 * Set to 1 to make message parts be saved with original file names
+				 * when the SaveBody parameter is used.
+				 */
+				$mime->use_part_file_names = 0;
+
+				/*
+				 * Set this variable with entries that define MIME types not yet
+				 * recognized by the Analyze class function.
+				 */
+				$mime->custom_mime_types = array(
+					'application/vnd.openxmlformats-officedocument.wordprocessingml.document'=>array(
+						'Type' => 'ms-word',
+						'Description' => 'Word processing document in Microsoft Office OpenXML format'
+					)
+				);
+
+				$parameters=array(
+					'File'=>isset($dir)? $dir . $file : $file,
+					'SkipBody'=>0,
+				);
+
+				if (!$mime->Decode($parameters, $decoded))
+				{
+					$error_msg = $lang->lang('ACP_MBOXIMPORT_MIME_DECODING_ERROR') . ' ' . $mime->error . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $mime->error_position;
+					if ($mime->track_lines && $mime->GetPositionLine($mime->error_position, $line, $column))
+					{
+						$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . $column;
+					}
+					trigger_error($file . ': ' . $error_msg . adm_back_link($this->u_action));
+				}
+				else
+				{
+					for ($message = 0; $message < count($decoded); $message++)
+					{
+						if ($mime->decode_bodies)
 						{
-							if ($this->message_not_imported($decoded[$message]['Headers']['message-id:']))
+							if ($mime->Analyze($decoded[$message], $results))
 							{
-								// We need to post as ANONYMOUS user
-								$user_id = $user->data['user_id'];
-								$user->session_kill();
-								// Parse the data from the mime message
-								$post_data = $this->parse_mime_message($decoded[$message], $results);
-								// Submit the post
-								submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
-								$user->session_create($user_id, true);
-								$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
+								if ($this->message_not_imported($decoded[$message]['Headers']['message-id:']))
+								{
+									// We need to post as ANONYMOUS user
+									$user_id = $user->data['user_id'];
+									$user->session_kill();
+									// Parse the data from the mime message
+									$post_data = $this->parse_mime_message($decoded[$message], $results);
+									// Submit the post
+									submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
+									$user->session_create($user_id, true);
+									$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
+								}
+							}
+							else
+							{
+								trigger_error($file . ': ' . $lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR') . ' ' . $mime->error . adm_back_link($this->u_action));
 							}
 						}
-						else
-						{
-							trigger_error($lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR') . ' ' . $mime->error . adm_back_link($this->u_action));
-						}
 					}
-				}
-				for ($warning = 0, Reset($mime->warnings); $warning < count($mime->warnings); Next($mime->warnings), $warning++)
-				{
-					$w = Key($mime->warnings);
-					$error_msg = ($lang->lang('WARNING')) . ': ' . $mime->warnings[$w] . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $w;
-					if ($mime->track_lines && $mime->GetPositionLine($w, $line, $column))
-						$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . $column;
-					trigger_error($error_msg . adm_back_link($this->u_action));
+					for ($warning = 0, Reset($mime->warnings); $warning < count($mime->warnings); Next($mime->warnings), $warning++)
+					{
+						$w = Key($mime->warnings);
+						$error_msg = ($lang->lang('WARNING')) . ': ' . $mime->warnings[$w] . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $w;
+						if ($mime->track_lines && $mime->GetPositionLine($w, $line, $column))
+							$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . ' ' . $column;
+						trigger_error($file . ': ' . $error_msg . adm_back_link($this->u_action));
+					}
 				}
 			}
 

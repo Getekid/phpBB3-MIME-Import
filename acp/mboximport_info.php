@@ -15,7 +15,8 @@ class mboximport_info
 			'filename'	=> '\getekid\mboximport\acp\mboximport_module',
 			'title'		=> 'ACP_MBOXIMPORT',
 			'modes'		=> array(
-				'import'	=> array('title' => 'ACP_MBOXIMPORT_IMPORT', 'auth' => 'ext_getekid/mboximport', 'cat' => array('ACP_MBOXIMPORT')),
+				'import_file'	=> array('title' => 'ACP_MBOXIMPORT_IMPORT_FILE', 'auth' => 'ext_getekid/mboximport', 'cat' => array('ACP_MBOXIMPORT')),
+				'import_dir'	=> array('title' => 'ACP_MBOXIMPORT_IMPORT_DIR', 'auth' => 'ext_getekid/mboximport', 'cat' => array('ACP_MBOXIMPORT')),
 			),
 		);
 	}
