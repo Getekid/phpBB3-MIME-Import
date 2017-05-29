@@ -100,6 +100,9 @@ class mboximport_module
 						trigger_error($lang->lang('ACP_MBOXIMPORT_NOT_DIR') . adm_back_link($this->u_action));
 					}
 
+					// In case the path does not end with a slash, add one
+					$dir = (substr($dir, -1) == '/') ? $dir : $dir . '/';
+
 					$files = array_diff(scandir($dir), array('.', '..'));
 				break;
 			}
