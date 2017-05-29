@@ -25,6 +25,9 @@ class mboximport_module
 	public $tpl_name;
 	public $u_action;
 
+	private $errors = array();
+	private $file_index = '';
+
 	public function main($id, $mode)
 	{
 		global $phpbb_container;
@@ -109,6 +112,9 @@ class mboximport_module
 
 			foreach ($files as $file)
 			{
+				// In case we are importing from directory we need a file index for the errors
+				$this->file_index = ($mode == 'import_dir') ? $file . ': ' : '';
+
 				/*
 				 * Using the example from test_message_decoder.php,v 1.13 2012/04/11 09:28:19 mlemos Exp $
 				 */
@@ -164,7 +170,7 @@ class mboximport_module
 					{
 						$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . $column;
 					}
-					trigger_error($file . ': ' . $error_msg . adm_back_link($this->u_action));
+					$this->errors[] = $this->file_index . $error_msg;
 				}
 				else
 				{
@@ -189,7 +195,8 @@ class mboximport_module
 							}
 							else
 							{
-								trigger_error($file . ': ' . $lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR') . ' ' . $mime->error . adm_back_link($this->u_action));
+								$error_msg = $lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR') . ' ' . $mime->error;
+								$this->errors[] = $this->file_index . $error_msg;
 							}
 						}
 					}
@@ -199,13 +206,20 @@ class mboximport_module
 						$error_msg = ($lang->lang('WARNING')) . ': ' . $mime->warnings[$w] . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $w;
 						if ($mime->track_lines && $mime->GetPositionLine($w, $line, $column))
 							$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . ' ' . $column;
-						trigger_error($file . ': ' . $error_msg . adm_back_link($this->u_action));
+						$this->errors[] = $this->file_index . $error_msg;
 					}
 				}
 			}
 
 			// TODO Add message with the number of messages imported
-			trigger_error($lang->lang('ACP_MBOXIMPORT_IMPORT_SUCCESS') . adm_back_link($this->u_action));
+			if (empty($this->errors))
+			{
+				trigger_error($lang->lang('ACP_MBOXIMPORT_IMPORT_SUCCESS') . adm_back_link($this->u_action));
+			}
+			else
+			{
+				trigger_error(implode('<br>', $this->errors) . adm_back_link($this->u_action));
+			}
 		}
 
 		$template->assign_vars(array(
@@ -404,8 +418,6 @@ class mboximport_module
 		/** @var \phpbb\user $user */
 		$user = $phpbb_container->get('user');
 
-		$error = array();
-
 		$forum_id = ($is_message) ? 0 : $forum_id;
 
 		foreach ($attachment_data as $key => $attachment)
@@ -421,12 +433,11 @@ class mboximport_module
 
 				if (sizeof($error))
 				{
-					$error_msg = '';
-					foreach ($error as $error_message)
+					foreach ($error as $error_msg)
 					{
-						$error_msg .= '<br />' . $lang->lang($error_message); // TODO Translation doesn't work
+						$error_msg = 'Attachment "' . $attachment['realname'] . '"' . ' error: ' . $lang->lang($error_msg); // TODO Translation doesn't work
+						$this->errors[] = $this->file_index . $error_msg;
 					}
-					trigger_error('"' . $attachment['realname'] . '"' . ' error: ' . $error_msg . adm_back_link($this->u_action));
 				}
 
 				if ($filedata['post_attach'] && !sizeof($error))
@@ -469,7 +480,7 @@ class mboximport_module
 				}
 			}
 		}
-		return (sizeof($error)) ? $error : $attachment_data;
+		return $attachment_data;
 	}
 
 	/**
