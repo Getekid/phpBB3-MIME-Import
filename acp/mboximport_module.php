@@ -165,10 +165,10 @@ class mboximport_module
 
 				if (!$mime->Decode($parameters, $decoded))
 				{
-					$error_msg = $lang->lang('ACP_MBOXIMPORT_MIME_DECODING_ERROR') . ' ' . $mime->error . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $mime->error_position;
+					$error_msg = $lang->lang('ACP_MBOXIMPORT_MIME_DECODING_ERROR', $mime->error) . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION', $mime->error_position);
 					if ($mime->track_lines && $mime->GetPositionLine($mime->error_position, $line, $column))
 					{
-						$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . $column;
+						$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE_AND_COLUMN', $line, $column);
 					}
 					$this->errors[] = $this->file_index . $error_msg;
 				}
@@ -195,7 +195,7 @@ class mboximport_module
 							}
 							else
 							{
-								$error_msg = $lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR') . ' ' . $mime->error;
+								$error_msg = $lang->lang('ACP_MBOXIMPORT_MIME_ANALYSE_ERROR', $mime->error);
 								$this->errors[] = $this->file_index . $error_msg;
 							}
 						}
@@ -203,9 +203,9 @@ class mboximport_module
 					for ($warning = 0, Reset($mime->warnings); $warning < count($mime->warnings); Next($mime->warnings), $warning++)
 					{
 						$w = Key($mime->warnings);
-						$error_msg = ($lang->lang('WARNING')) . ': ' . $mime->warnings[$w] . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION') . ' ' . $w;
+						$error_msg = ($lang->lang('WARNING')) . ': ' . $mime->warnings[$w] . ' ' . $lang->lang('ACP_MBOXIMPORT_POSITION', $w);
 						if ($mime->track_lines && $mime->GetPositionLine($w, $line, $column))
-							$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE') . $line . ' ' . $lang->lang('ACP_MBOXIMPORT_COLUMN') . ' ' . $column;
+							$error_msg .= ' '. $lang->lang('ACP_MBOXIMPORT_LINE_AND_COLUMN', $line, $column);
 						$this->errors[] = $this->file_index . $error_msg;
 					}
 				}
@@ -435,7 +435,7 @@ class mboximport_module
 				{
 					foreach ($error as $error_msg)
 					{
-						$error_msg = 'Attachment "' . $attachment['realname'] . '"' . ' error: ' . $lang->lang($error_msg); // TODO Translation doesn't work
+						$error_msg = $lang->lang('ACP_MBOXIMPORT_ATTACHMENT_ERROR', $attachment['realname']) . $lang->lang($error_msg); // TODO Translation doesn't work
 						$this->errors[] = $this->file_index . $error_msg;
 					}
 				}
