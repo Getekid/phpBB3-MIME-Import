@@ -190,7 +190,7 @@ class mboximport_module
 									// Submit the post
 									submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
 									$user->session_create($user_id, true);
-									$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
+									$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['mime_message_id']);
 								}
 							}
 							else
@@ -303,12 +303,13 @@ class mboximport_module
 		);
 
 		$post_data = array(
-			'mode'			=> $mode,
-			'subject'		=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
-			'username'		=> $username,
-			'poll'			=> $poll,
-			'data'			=> $data,
-			'message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
+			'mode'				=> $mode,
+			'subject'			=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			'username'			=> $username,
+			'poll'				=> $poll,
+			'data'				=> $data,
+			// Add Mime message information to the database
+			'mime_message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
 		);
 
 		return $post_data;
@@ -384,7 +385,7 @@ class mboximport_module
 
 		$sql = 'SELECT topic_id
 			  FROM ' . POSTS_TABLE . " 
-			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+			  WHERE mime_message_id = '" . $db->sql_escape($message_id) . "'";
 
 		// Run the query
 		$result = $db->sql_query($sql);
@@ -496,9 +497,9 @@ class mboximport_module
 		/** @var \phpbb\db\driver\driver_interface $db */
 		$db = $phpbb_container->get('dbal.conn');
 
-		$sql = 'SELECT message_id
+		$sql = 'SELECT mime_message_id
 			  FROM ' . POSTS_TABLE . " 
-			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+			  WHERE mime_message_id = '" . $db->sql_escape($message_id) . "'";
 
 		// Run the query
 		$result = $db->sql_query($sql);
@@ -506,7 +507,7 @@ class mboximport_module
 		$row = $db->sql_fetchrow($result);
 		$db->sql_freeresult($result);
 
-		return !isset($row['message_id']);
+		return !isset($row['mime_message_id']);
 	}
 
 	/**
@@ -523,7 +524,7 @@ class mboximport_module
 		$db = $phpbb_container->get('dbal.conn');
 
 		$sql_arr = array(
-			'message_id'	=> $message_id,
+			'mime_message_id'	=> $message_id,
 		);
 
 		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . 'WHERE ' . $db->sql_in_set('post_id', $post_id);
