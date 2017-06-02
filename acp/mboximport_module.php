@@ -241,6 +241,11 @@ class mboximport_module
 		$in_reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
 		$mode = ($in_reply_to == '' || $this->message_not_imported($in_reply_to)) ? 'post' : 'reply';
 
+		// Get forum_id
+		$forum_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : 4; // TODO Make it dynamic
+		// Get topic_id
+		$topic_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['topic_id'] : 0;
+
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
 		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
@@ -263,8 +268,7 @@ class mboximport_module
 					'content_id'		=> $attachment['ContentID'],
 				);
 			}
-			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode,4, false, $attachment_data);
-
+			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode, $forum_id, false, $attachment_data);
 		}
 
 		// Convert HTML in Data to BBcode
@@ -276,8 +280,8 @@ class mboximport_module
 		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags, true, true);
 		$data = array(
 			// General Posting Settings
-			'forum_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : ((isset($forum_id)) ? $forum_id : 4), // TODO Make it dynamic
-			'topic_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['topic_id'] : 0,
+			'forum_id' => $forum_id,
+			'topic_id' => $topic_id,
 			'icon_id' => false,
 			// Defining Post Options
 			'enable_bbcode' => true,
