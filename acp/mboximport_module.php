@@ -190,7 +190,7 @@ class mboximport_module
 									// Submit the post
 									submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
 									$user->session_create($user_id, true);
-									$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['mime_message_id']);
+									$this->set_mime_data_from_post_id($post_data['data']['post_id'], $post_data['mime_message_id'], $post_data['mime_in_reply_to']);
 								}
 							}
 							else
@@ -310,6 +310,7 @@ class mboximport_module
 			'data'				=> $data,
 			// Add Mime message information to the database
 			'mime_message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
+			'mime_in_reply_to'	=> $reply_to,
 		);
 
 		return $post_data;
@@ -511,12 +512,13 @@ class mboximport_module
 	}
 
 	/**
-	 * Sets the message_id in a post
+	 * Sets the MIME data in a post
 	 *
 	 * @param int $post_id
 	 * @param string $message_id
+	 * @param string $in_reply_to
 	 */
-	private function set_message_id_from_post_id($post_id, $message_id)
+	private function set_mime_data_from_post_id($post_id, $message_id, $in_reply_to)
 	{
 		global $phpbb_container;
 
@@ -525,6 +527,7 @@ class mboximport_module
 
 		$sql_arr = array(
 			'mime_message_id'	=> $message_id,
+			'mime_in_reply_to'	=> $in_reply_to,
 		);
 
 		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . ' WHERE ' . $db->sql_in_set('post_id', $post_id);

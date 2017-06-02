@@ -15,6 +15,7 @@ class add_message_to_posts_schema extends \phpbb\db\migration\migration
 			'add_columns'        => array(
 				$this->table_prefix . 'posts'        => array(
 					'mime_message_id'    => array('VCHAR:255', ''),
+					'mime_in_reply_to'   => array('VCHAR:255', ''),
 				),
 			),
 		);
@@ -26,6 +27,7 @@ class add_message_to_posts_schema extends \phpbb\db\migration\migration
 			'drop_columns'        => array(
 				$this->table_prefix . 'posts'        => array(
 					'mime_message_id',
+					'mime_in_reply_to',
 				),
 			),
 		);
