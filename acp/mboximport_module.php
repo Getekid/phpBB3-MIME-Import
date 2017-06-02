@@ -190,7 +190,7 @@ class mboximport_module
 									// Submit the post
 									submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
 									$user->session_create($user_id, true);
-									$this->set_message_id_from_post_id($post_data['data']['post_id'], $post_data['message_id']);
+									$this->set_mime_data_from_post_id($post_data['data']['post_id'], $post_data['mime_message_id'], $post_data['mime_in_reply_to']);
 								}
 							}
 							else
@@ -238,8 +238,8 @@ class mboximport_module
 	private function parse_mime_message($decoded, $analysed)
 	{
 		// Get mode
-		$reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
-		$mode = ($reply_to == '' || $this->message_not_imported($reply_to)) ? 'post' : 'reply';
+		$in_reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
+		$mode = ($in_reply_to == '' || $this->message_not_imported($in_reply_to)) ? 'post' : 'reply';
 
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
@@ -276,8 +276,8 @@ class mboximport_module
 		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags, true, true);
 		$data = array(
 			// General Posting Settings
-			'forum_id' => 4, // TODO Make it dynamic
-			'topic_id' => ($mode == 'reply') ? $this->get_topic_id_from_message_id($decoded['Headers']['in-reply-to:']) : 0,
+			'forum_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : ((isset($forum_id)) ? $forum_id : 4), // TODO Make it dynamic
+			'topic_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['topic_id'] : 0,
 			'icon_id' => false,
 			// Defining Post Options
 			'enable_bbcode' => true,
@@ -303,12 +303,14 @@ class mboximport_module
 		);
 
 		$post_data = array(
-			'mode'			=> $mode,
-			'subject'		=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
-			'username'		=> $username,
-			'poll'			=> $poll,
-			'data'			=> $data,
-			'message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
+			'mode'				=> $mode,
+			'subject'			=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			'username'			=> $username,
+			'poll'				=> $poll,
+			'data'				=> $data,
+			// Add Mime message information to the database
+			'mime_message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
+			'mime_in_reply_to'	=> $in_reply_to,
 		);
 
 		return $post_data;
@@ -370,21 +372,21 @@ class mboximport_module
 	}
 
 	/**
-	 * Gets the topic_id of the post that has a message_id
+	 * Gets data of the post that has a message_id
 	 *
 	 * @param string $message_id
 	 * @return int
 	 */
-	private function get_topic_id_from_message_id($message_id)
+	private function get_post_data_from_message_id($message_id)
 	{
 		global $phpbb_container;
 
 		/** @var \phpbb\db\driver\driver_interface $db */
 		$db = $phpbb_container->get('dbal.conn');
 
-		$sql = 'SELECT topic_id
+		$sql = 'SELECT topic_id, forum_id
 			  FROM ' . POSTS_TABLE . " 
-			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+			  WHERE mime_message_id = '" . $db->sql_escape($message_id) . "'";
 
 		// Run the query
 		$result = $db->sql_query($sql);
@@ -392,7 +394,7 @@ class mboximport_module
 		$row = $db->sql_fetchrow($result);
 		$db->sql_freeresult($result);
 
-		return $row['topic_id'];
+		return $row;
 	}
 
 	/**
@@ -496,9 +498,9 @@ class mboximport_module
 		/** @var \phpbb\db\driver\driver_interface $db */
 		$db = $phpbb_container->get('dbal.conn');
 
-		$sql = 'SELECT message_id
+		$sql = 'SELECT mime_message_id
 			  FROM ' . POSTS_TABLE . " 
-			  WHERE message_id = '" . $db->sql_escape($message_id) . "'";
+			  WHERE mime_message_id = '" . $db->sql_escape($message_id) . "'";
 
 		// Run the query
 		$result = $db->sql_query($sql);
@@ -506,16 +508,17 @@ class mboximport_module
 		$row = $db->sql_fetchrow($result);
 		$db->sql_freeresult($result);
 
-		return !isset($row['message_id']);
+		return !isset($row['mime_message_id']);
 	}
 
 	/**
-	 * Sets the message_id in a post
+	 * Sets the MIME data in a post
 	 *
 	 * @param int $post_id
 	 * @param string $message_id
+	 * @param string $in_reply_to
 	 */
-	private function set_message_id_from_post_id($post_id, $message_id)
+	private function set_mime_data_from_post_id($post_id, $message_id, $in_reply_to)
 	{
 		global $phpbb_container;
 
@@ -523,10 +526,11 @@ class mboximport_module
 		$db = $phpbb_container->get('dbal.conn');
 
 		$sql_arr = array(
-			'message_id'	=> $message_id,
+			'mime_message_id'	=> $message_id,
+			'mime_in_reply_to'	=> $in_reply_to,
 		);
 
-		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . 'WHERE ' . $db->sql_in_set('post_id', $post_id);
+		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . ' WHERE ' . $db->sql_in_set('post_id', $post_id);
 		$db->sql_query($sql);
 	}
 }
