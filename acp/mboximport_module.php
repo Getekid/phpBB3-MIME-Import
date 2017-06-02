@@ -238,8 +238,8 @@ class mboximport_module
 	private function parse_mime_message($decoded, $analysed)
 	{
 		// Get mode
-		$reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
-		$mode = ($reply_to == '' || $this->message_not_imported($reply_to)) ? 'post' : 'reply';
+		$in_reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
+		$mode = ($in_reply_to == '' || $this->message_not_imported($in_reply_to)) ? 'post' : 'reply';
 
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
@@ -277,7 +277,7 @@ class mboximport_module
 		$data = array(
 			// General Posting Settings
 			'forum_id' => 4, // TODO Make it dynamic
-			'topic_id' => ($mode == 'reply') ? $this->get_topic_id_from_message_id($decoded['Headers']['in-reply-to:']) : 0,
+			'topic_id' => ($mode == 'reply') ? $this->get_topic_id_from_message_id($in_reply_to) : 0,
 			'icon_id' => false,
 			// Defining Post Options
 			'enable_bbcode' => true,
@@ -310,7 +310,7 @@ class mboximport_module
 			'data'				=> $data,
 			// Add Mime message information to the database
 			'mime_message_id'	=> (isset($decoded['Headers']['message-id:'])) ? $decoded['Headers']['message-id:'] : '',
-			'mime_in_reply_to'	=> $reply_to,
+			'mime_in_reply_to'	=> $in_reply_to,
 		);
 
 		return $post_data;
