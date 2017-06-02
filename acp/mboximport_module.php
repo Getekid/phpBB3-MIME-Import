@@ -392,7 +392,7 @@ class mboximport_module
 				);
 			}
 			// Replace the Content ID with the attachment index
-			$message_phpbb = preg_replace_callback('#\[attachment=([a-z]{2}_[a-z0-9]{16})\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
+			$message_phpbb = preg_replace_callback('#\[attachment=(.+)\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
 				return '[attachment='.$attachment_index[$match[1]]['key'].']' . $attachment_index[$match[1]]['real_filename'] . $match[2] . '[/attachment]';
 			}, $message_phpbb);
 			// Remove the formatting in the attachment BBcode
