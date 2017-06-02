@@ -251,10 +251,11 @@ class mboximport_module
 		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
 
 		// Add attachments
-		if (isset($analysed['Related']))
+		if (isset($analysed['Related']) || isset($analysed['Attachments']))
 		{
 			$attachment_data = array();
-			foreach ($analysed['Related'] as $attachment)
+			$attachments = (isset($analysed['Related']) && isset($analysed['Attachments'])) ? array_merge($analysed['Related'], $analysed['Attachments']) : ((isset($analysed['Related'])) ? $analysed['Related'] : $analysed['Attachments']);
+			foreach ($attachments as $attachment)
 			{
 				$filename = tempnam(sys_get_temp_dir(), unique_id() . '-');
 				file_put_contents($filename, $attachment['Data']);
@@ -262,10 +263,10 @@ class mboximport_module
 					'attach_comment'	=> '',
 					'realname'			=> $attachment['FileName'],
 					'size'				=> 0,
-					'type'				=> $attachment['SubType'],
+					'type'				=> (isset($attachment['SubType'])) ? $attachment['SubType'] : ((isset($attachment['Type'])) ? $attachment['Type'] : ''),
 					'local'				=> true,
 					'local_storage'		=> $filename,
-					'content_id'		=> $attachment['ContentID'],
+					'content_id'		=> (isset($attachment['ContentID'])) ? $attachment['ContentID'] : '',
 				);
 			}
 			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode, $forum_id, false, $attachment_data);
