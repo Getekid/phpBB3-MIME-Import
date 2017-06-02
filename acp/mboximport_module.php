@@ -527,7 +527,7 @@ class mboximport_module
 			'mime_message_id'	=> $message_id,
 		);
 
-		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . 'WHERE ' . $db->sql_in_set('post_id', $post_id);
+		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . ' WHERE ' . $db->sql_in_set('post_id', $post_id);
 		$db->sql_query($sql);
 	}
 }
