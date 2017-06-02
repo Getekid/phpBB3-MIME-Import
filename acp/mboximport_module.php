@@ -266,6 +266,29 @@ class mboximport_module
 				// Create the file
 				$filename = tempnam(sys_get_temp_dir(), unique_id() . '-');
 				file_put_contents($filename, $attachment['Data']);
+
+				// In case the attachment is an image the SubType could be wrong
+				$image_type = (isset($attachment['Type']) && ($attachment['Type'] == 'image')) ? exif_imagetype($filename) : false;
+				if ($image_type !== false)
+				{
+					if($image_type == IMAGETYPE_GIF && $attachment['SubType'] != 'gif')
+					{
+						$attachment['FileName'] .= '.gif';
+						$attachment['SubType'] = 'gif';
+					}
+					else if($image_type == IMAGETYPE_JPEG && ($attachment['SubType'] != 'jpeg' && $attachment['SubType'] != 'jpg'))
+					{
+						$attachment['FileName'] .= '.jpg';
+						$attachment['SubType'] = 'jpeg';
+					}
+					else if($image_type == IMAGETYPE_PNG && $attachment['SubType'] != 'png')
+					{
+						$attachment['FileName'] .= '.png';
+						$attachment['SubType'] = 'png';
+					}
+				}
+
+				// Build the attachment array
 				$attachment_data[] = array(
 					'attach_comment'	=> '',
 					'realname'			=> $attachment['FileName'],
