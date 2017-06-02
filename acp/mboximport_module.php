@@ -257,6 +257,13 @@ class mboximport_module
 			$attachments = (isset($analysed['Related']) && isset($analysed['Attachments'])) ? array_merge($analysed['Related'], $analysed['Attachments']) : ((isset($analysed['Related'])) ? $analysed['Related'] : $analysed['Attachments']);
 			foreach ($attachments as $attachment)
 			{
+				// In case FileName is empty add a generic name
+				if (!isset($attachment['FileName']))
+				{
+					$attachment['FileName'] = (isset($attachment['Type'])) ? (($attachment['Type'] == 'image') ? $attachment['Type'] . '.' . $attachment['SubType'] : 'attachment' . $attachment['Type']) : 'attachment';
+				}
+
+				// Create the file
 				$filename = tempnam(sys_get_temp_dir(), unique_id() . '-');
 				file_put_contents($filename, $attachment['Data']);
 				$attachment_data[] = array(
