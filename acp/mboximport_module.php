@@ -241,30 +241,65 @@ class mboximport_module
 		$in_reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
 		$mode = ($in_reply_to == '' || $this->message_not_imported($in_reply_to)) ? 'post' : 'reply';
 
+		// Get forum_id
+		$forum_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : 4; // TODO Make it dynamic
+		// Get topic_id
+		$topic_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['topic_id'] : 0;
+
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
 		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
 
 		// Add attachments
-		if (isset($analysed['Related']))
+		if (isset($analysed['Related']) || isset($analysed['Attachments']))
 		{
 			$attachment_data = array();
-			foreach ($analysed['Related'] as $attachment)
+			$attachments = (isset($analysed['Related']) && isset($analysed['Attachments'])) ? array_merge($analysed['Related'], $analysed['Attachments']) : ((isset($analysed['Related'])) ? $analysed['Related'] : $analysed['Attachments']);
+			foreach ($attachments as $attachment)
 			{
+				// In case FileName is empty add a generic name
+				if (!isset($attachment['FileName']))
+				{
+					$attachment['FileName'] = (isset($attachment['Type'])) ? (($attachment['Type'] == 'image') ? $attachment['Type'] . '.' . $attachment['SubType'] : 'attachment' . $attachment['Type']) : 'attachment';
+				}
+
+				// Create the file
 				$filename = tempnam(sys_get_temp_dir(), unique_id() . '-');
 				file_put_contents($filename, $attachment['Data']);
+
+				// In case the attachment is an image the SubType could be wrong
+				$image_type = (isset($attachment['Type']) && ($attachment['Type'] == 'image')) ? exif_imagetype($filename) : false;
+				if ($image_type !== false)
+				{
+					if($image_type == IMAGETYPE_GIF && $attachment['SubType'] != 'gif')
+					{
+						$attachment['FileName'] .= '.gif';
+						$attachment['SubType'] = 'gif';
+					}
+					else if($image_type == IMAGETYPE_JPEG && ($attachment['SubType'] != 'jpeg' && $attachment['SubType'] != 'jpg'))
+					{
+						$attachment['FileName'] .= '.jpg';
+						$attachment['SubType'] = 'jpeg';
+					}
+					else if($image_type == IMAGETYPE_PNG && $attachment['SubType'] != 'png')
+					{
+						$attachment['FileName'] .= '.png';
+						$attachment['SubType'] = 'png';
+					}
+				}
+
+				// Build the attachment array
 				$attachment_data[] = array(
 					'attach_comment'	=> '',
 					'realname'			=> $attachment['FileName'],
 					'size'				=> 0,
-					'type'				=> $attachment['SubType'],
+					'type'				=> (isset($attachment['SubType'])) ? $attachment['SubType'] : ((isset($attachment['Type'])) ? $attachment['Type'] : ''),
 					'local'				=> true,
 					'local_storage'		=> $filename,
-					'content_id'		=> $attachment['ContentID'],
+					'content_id'		=> (isset($attachment['ContentID'])) ? $attachment['ContentID'] : '',
 				);
 			}
-			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode,4, false, $attachment_data);
-
+			$attachment_data = $this->parse_attachments('getekid_mboximport_import', $mode, $forum_id, false, $attachment_data);
 		}
 
 		// Convert HTML in Data to BBcode
@@ -276,8 +311,8 @@ class mboximport_module
 		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags, true, true);
 		$data = array(
 			// General Posting Settings
-			'forum_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : ((isset($forum_id)) ? $forum_id : 4), // TODO Make it dynamic
-			'topic_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['topic_id'] : 0,
+			'forum_id' => $forum_id,
+			'topic_id' => $topic_id,
 			'icon_id' => false,
 			// Defining Post Options
 			'enable_bbcode' => true,
@@ -357,7 +392,7 @@ class mboximport_module
 				);
 			}
 			// Replace the Content ID with the attachment index
-			$message_phpbb = preg_replace_callback('#\[attachment=([a-z]{2}_[a-z0-9]{16})\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
+			$message_phpbb = preg_replace_callback('#\[attachment=(.+)\](.*?)\[\/attachment\]#', function ($match) use ($attachment_index) {
 				return '[attachment='.$attachment_index[$match[1]]['key'].']' . $attachment_index[$match[1]]['real_filename'] . $match[2] . '[/attachment]';
 			}, $message_phpbb);
 			// Remove the formatting in the attachment BBcode
