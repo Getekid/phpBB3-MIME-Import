@@ -276,8 +276,8 @@ class mboximport_module
 		generate_text_for_storage($message_phpbb, $uid, $bitfield, $flags, true, true);
 		$data = array(
 			// General Posting Settings
-			'forum_id' => 4, // TODO Make it dynamic
-			'topic_id' => ($mode == 'reply') ? $this->get_topic_id_from_message_id($in_reply_to) : 0,
+			'forum_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : ((isset($forum_id)) ? $forum_id : 4), // TODO Make it dynamic
+			'topic_id' => ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['topic_id'] : 0,
 			'icon_id' => false,
 			// Defining Post Options
 			'enable_bbcode' => true,
@@ -372,19 +372,19 @@ class mboximport_module
 	}
 
 	/**
-	 * Gets the topic_id of the post that has a message_id
+	 * Gets data of the post that has a message_id
 	 *
 	 * @param string $message_id
 	 * @return int
 	 */
-	private function get_topic_id_from_message_id($message_id)
+	private function get_post_data_from_message_id($message_id)
 	{
 		global $phpbb_container;
 
 		/** @var \phpbb\db\driver\driver_interface $db */
 		$db = $phpbb_container->get('dbal.conn');
 
-		$sql = 'SELECT topic_id
+		$sql = 'SELECT topic_id, forum_id
 			  FROM ' . POSTS_TABLE . " 
 			  WHERE mime_message_id = '" . $db->sql_escape($message_id) . "'";
 
@@ -394,7 +394,7 @@ class mboximport_module
 		$row = $db->sql_fetchrow($result);
 		$db->sql_freeresult($result);
 
-		return $row['topic_id'];
+		return $row;
 	}
 
 	/**
