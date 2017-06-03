@@ -260,7 +260,26 @@ class mboximport_module
 				// In case FileName is empty add a generic name
 				if (!isset($attachment['FileName']))
 				{
-					$attachment['FileName'] = (isset($attachment['Type'])) ? (($attachment['Type'] == 'image') ? $attachment['Type'] . '.' . $attachment['SubType'] : 'attachment' . $attachment['Type']) : 'attachment';
+					if (isset($attachment['Type']))
+					{
+						switch ($attachment['Type'])
+						{
+							case 'image':
+								$attachment['FileName'] = $attachment['Type'] . '.' . $attachment['SubType'];
+							break;
+
+							case 'text':
+								$attachment['FileName'] = 'attachment.txt';
+							break;
+
+							default:
+								$attachment['FileName'] = 'attachment' . '.' . $attachment['Type'];
+						}
+					}
+					else
+					{
+						$attachment['FileName'] = 'attachment';
+					}
 				}
 
 				// Create the file
