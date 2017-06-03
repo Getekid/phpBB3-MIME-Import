@@ -241,6 +241,9 @@ class mboximport_module
 		$in_reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
 		$mode = ($in_reply_to == '' || $this->message_not_imported($in_reply_to)) ? 'post' : 'reply';
 
+		// Get subject
+		$subject = (isset($analysed['Subject'])) ? $this->clean_utf8_bin($analysed['Subject']) : '';
+
 		// Get forum_id
 		$forum_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : 4; // TODO Make it dynamic
 		// Get topic_id
@@ -249,6 +252,8 @@ class mboximport_module
 		// Get username
 		$mail_from = (isset($analysed['From'])) ? $analysed['From'][0] : '';
 		$username = (isset($mail_from)) ? ((isset($mail_from['name'])) ? $mail_from['name'] : $mail_from['address']) : '';
+		// Fix encoding
+		$username = $this->clean_utf8_bin($username);
 
 		// Add attachments
 		if (isset($analysed['Related']) || isset($analysed['Attachments']))
@@ -310,7 +315,7 @@ class mboximport_module
 				// Build the attachment array
 				$attachment_data[] = array(
 					'attach_comment'	=> '',
-					'realname'			=> $attachment['FileName'],
+					'realname'			=> $this->clean_utf8_bin($attachment['FileName']),
 					'size'				=> 0,
 					'type'				=> (isset($attachment['SubType'])) ? $attachment['SubType'] : ((isset($attachment['Type'])) ? $attachment['Type'] : ''),
 					'local'				=> true,
@@ -348,7 +353,7 @@ class mboximport_module
 			'bbcode_uid' => $uid,
 			// Other Options
 			'post_edit_locked' => 0,
-			'topic_title' => (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			'topic_title' => $subject,
 			// Email Notification Settings
 			'notify_set' => false,
 			'notify' => false,
@@ -358,7 +363,7 @@ class mboximport_module
 
 		$post_data = array(
 			'mode'				=> $mode,
-			'subject'			=> (isset($analysed['Subject'])) ? $analysed['Subject'] : '',
+			'subject'			=> $subject,
 			'username'			=> $username,
 			'poll'				=> $poll,
 			'data'				=> $data,
@@ -586,5 +591,23 @@ class mboximport_module
 
 		$sql = 'UPDATE ' . POSTS_TABLE . ' SET ' . $db->sql_build_array('UPDATE', $sql_arr) . ' WHERE ' . $db->sql_in_set('post_id', $post_id);
 		$db->sql_query($sql);
+	}
+
+	/**
+	 * Converts string to UTF-8 and removes out-of-bounds characters
+	 * that are currently not supported by utf8_bin in MySQL
+	 *
+	 * @param string $string
+	 * @return string
+	 */
+	private function clean_utf8_bin($string)
+	{
+		// Convert to UTF-8
+		$string = (preg_match('//u', $string)) ? $string : utf8_encode($string);
+		// Check for out-of-bounds characters that are currently
+		// not supported by utf8_bin in MySQL
+		$string = preg_replace('/[\x{10000}-\x{10FFFF}]/u', "\xEF\xBF\xBD", $string);
+
+		return $string;
 	}
 }
