@@ -26,9 +26,13 @@ $lang = array_merge($lang, array(
 	'ACP_MBOXIMPORT_IMPORT_DIR'						=> 'Import from directory',
 	'ACP_MBOXIMPORT_IMPORT_DIR_EXPLAIN'				=> 'Import multiple Mbox files from a directory',
 	'ACP_MBOXIMPORT_PATH_DIR'						=> 'Directory path',
+	// Default forum
+	'ACP_MBOXIMPORT_SELECT_DEFAULT_FORUM'			=> 'Select default forum',
+	'ACP_MBOXIMPORT_SELECT_DEFAULT_FORUM_EXPLAIN'	=> 'The default forum for new topics. Reply posts to topics already imported will use the topic\'s forum.',
 
 	// Messages
 	'ACP_MBOXIMPORT_MIME_PARSER_CLASS_NOT_FOUND'	=> 'MIME Parser class not found',
+	'ACP_MBOXIMPORT_FORUM_NOT_VALID'				=> 'Forum is not valid',
 	'ACP_MBOXIMPORT_NOT_FILE'						=> 'Input is not a file',
 	'ACP_MBOXIMPORT_NOT_DIR'						=> 'Input is not a directory',
 	'ACP_MBOXIMPORT_MIME_DECODING_ERROR'			=> 'MIME message decoding error: %s',

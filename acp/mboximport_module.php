@@ -110,6 +110,13 @@ class mboximport_module
 				break;
 			}
 
+			$default_forum_id = $request->variable('default_forum_id', '');
+			// Check that a valid forum has been selected
+			if ($default_forum_id <= 0)
+			{
+				trigger_error($lang->lang('ACP_MBOXIMPORT_FORUM_NOT_VALID') . adm_back_link($this->u_action));
+			}
+
 			foreach ($files as $file)
 			{
 				// In case we are importing from directory we need a file index for the errors
@@ -186,7 +193,7 @@ class mboximport_module
 									$user_id = $user->data['user_id'];
 									$user->session_kill();
 									// Parse the data from the mime message
-									$post_data = $this->parse_mime_message($decoded[$message], $results);
+									$post_data = $this->parse_mime_message($decoded[$message], $results, $default_forum_id);
 									// Submit the post
 									submit_post($post_data['mode'], $post_data['subject'], $post_data['username'], POST_NORMAL, $post_data['poll'], $post_data['data']);
 									$user->session_create($user_id, true);
@@ -225,6 +232,7 @@ class mboximport_module
 		$template->assign_vars(array(
 			'S_MIME_PARSER_CLASS'	=> class_exists('mime_parser_class'),
 			'U_ACTION'          	=> $this->u_action,
+			'S_FORUM_OPTIONS'		=> make_forum_select(false, false, true, true),
 		));
 	}
 
@@ -233,9 +241,10 @@ class mboximport_module
 	 *
 	 * @param array $decoded
 	 * @param array $analysed
+	 * @param int $default_forum_id
 	 * @return array
 	 */
-	private function parse_mime_message($decoded, $analysed)
+	private function parse_mime_message($decoded, $analysed, $default_forum_id)
 	{
 		// Get mode
 		$in_reply_to = (isset($decoded['Headers']['in-reply-to:'])) ? $decoded['Headers']['in-reply-to:'] : '';
@@ -245,7 +254,7 @@ class mboximport_module
 		$subject = (isset($analysed['Subject'])) ? $this->clean_utf8_bin($analysed['Subject']) : '';
 
 		// Get forum_id
-		$forum_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : 4; // TODO Make it dynamic
+		$forum_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['forum_id'] : $default_forum_id;
 		// Get topic_id
 		$topic_id = ($mode == 'reply') ? $this->get_post_data_from_message_id($in_reply_to)['topic_id'] : 0;
 
