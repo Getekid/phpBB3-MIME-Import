@@ -225,6 +225,7 @@ class mboximport_module
 		$template->assign_vars(array(
 			'S_MIME_PARSER_CLASS'	=> class_exists('mime_parser_class'),
 			'U_ACTION'          	=> $this->u_action,
+			'S_FORUM_OPTIONS'		=> make_forum_select(false, false, true, true),
 		));
 	}
 
