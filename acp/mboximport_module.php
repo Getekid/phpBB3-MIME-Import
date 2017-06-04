@@ -294,7 +294,7 @@ class mboximport_module
 				file_put_contents($filename, $attachment['Data']);
 
 				// In case the attachment is an image the SubType could be wrong
-				$image_type = (isset($attachment['Type']) && ($attachment['Type'] == 'image')) ? exif_imagetype($filename) : false;
+				$image_type = exif_imagetype($filename);
 				if ($image_type !== false)
 				{
 					if($image_type == IMAGETYPE_GIF && $attachment['SubType'] != 'gif')
