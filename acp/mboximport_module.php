@@ -281,9 +281,11 @@ class mboximport_module
 								$attachment['FileName'] = 'attachment' . '.' . $attachment['Type'];
 						}
 					}
+					// In case FileName and Type is empty, skip the file
 					else
 					{
-						$attachment['FileName'] = 'attachment';
+						$this->errors[] = $this->file_index . $lang->lang('ACP_MBOXIMPORT_ATTACHMENT_EMPTY_ERROR');
+						continue;
 					}
 				}
 

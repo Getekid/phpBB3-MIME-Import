@@ -36,5 +36,6 @@ $lang = array_merge($lang, array(
 	'ACP_MBOXIMPORT_LINE_AND_COLUMN'				=> 'line %s column %s',
 	'ACP_MBOXIMPORT_MIME_ANALYSE_ERROR'				=> 'MIME message analyse error:',
 	'ACP_MBOXIMPORT_ATTACHMENT_ERROR'				=> 'Error with attachment "%s": ',
+	'ACP_MBOXIMPORT_ATTACHMENT_EMPTY_ERROR'			=> 'Empty attachment found, could not be imported',
 	'ACP_MBOXIMPORT_IMPORT_SUCCESS'					=> 'Mbox file has been imported successfully',
 ));
